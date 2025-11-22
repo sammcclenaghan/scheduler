@@ -7,6 +7,22 @@ services:
     expose:
       - "4000"
     restart: unless-stopped
+    environment:
+      - DATABASE_URL=appuser:admin@tcp(db:3306)/scheduler
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8-oracle
+    container_name: db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: scheduler
+    volumes:
+      - db-data:/var/lib/mysql
 
   caddy:
     image: caddy:2.10-alpine
@@ -18,3 +34,6 @@ services:
     restart: unless-stopped
     depends_on:
       - go-api
+
+volumes:
+  db-data:

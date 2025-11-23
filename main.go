@@ -18,7 +18,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-//go:embed migrations/*.sql
+//go:embed db/migrations/*.sql
 var embedMigrations embed.FS
 
 func handler(w http.ResponseWriter, r *http.Request) {

@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,63 +12,57 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/pressly/goose/v3"
+
+	"github.com/sammcclenaghan/scheduler/db"
+	"github.com/sammcclenaghan/scheduler/internal/database"
+	"github.com/sammcclenaghan/scheduler/internal/handlers"
 )
 
-//go:embed db/migrations/*.sql
-var embedMigrations embed.FS
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintf(w, `{"message": "Hello"}`)
+type Server struct {
+	Router  *chi.Mux
+	Queries *db.Queries
 }
 
-func apiHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{"message":"Hello, World!"}`)
+func CreateNewServer(queries *db.Queries) *Server {
+	s := &Server{
+		Router:  chi.NewRouter(),
+		Queries: queries,
+	}
+	return s
+}
+
+func (s *Server) MountHandlers() {
+	// Mount all middleware here
+	s.Router.Use(middleware.Logger)
+
+	// Mount all handlers here
+	s.Router.Get("/v1/healthcheck", handlers.Healthcheck(s.Queries))
+	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
 }
 
 func main() {
-	// Connect to database
+	ctx := context.Background()
+
+	// Connect to database (and run migrations)
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "appuser:admin@tcp(localhost:3306)/scheduler"
 	}
 
-	db, err := sql.Open("mysql", dbURL)
+	sqlDB, err := database.Open(ctx, database.Config{DSN: dbURL})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("database init failed: %v", err)
 	}
-	defer db.Close()
+	defer sqlDB.Close()
 
-	// Test connection
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
+	queries := db.New(sqlDB)
 
-	// Set up goose migrations
-	goose.SetBaseFS(embedMigrations)
-
-	// Run migrations
-	if err := goose.SetDialect("mysql"); err != nil {
-		log.Fatalf("Failed to set dialect: %v", err)
-	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		log.Fatalf("Migration failed: %v", err)
-	}
-	fmt.Println("Migrations completed successfully")
-
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-
-	r.Get("/", handler)
-	r.Get("/api/hello", apiHandler)
+	s := CreateNewServer(queries)
+	s.MountHandlers()
 
 	srv := &http.Server{
 		Addr:    ":4000",
-		Handler: r,
+		Handler: s.Router,
 	}
 
 	stop := make(chan os.Signal, 1)
@@ -88,10 +80,10 @@ func main() {
 
 	fmt.Println("Shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctxShutdown, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctxShutdown); err != nil {
 		fmt.Printf("Server shutdown failed: %v\n", err)
 	}
 }

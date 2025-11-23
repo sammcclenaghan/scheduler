@@ -1,5 +1,4 @@
 -- +goose Up
--- Simple schema for courses
 CREATE TABLE courses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -21,7 +20,6 @@ CREATE TABLE courses (
     INDEX idx_courses_pre_and_coreq (pre_and_corequisites(255))
 );
 
--- Schema for sections (stores per-term CRN section snapshots with enrollment/waitlist data)
 CREATE TABLE sections (
     id INT AUTO_INCREMENT PRIMARY KEY,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

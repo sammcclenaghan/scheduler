@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,7 +13,11 @@ import (
 	"github.com/sammcclenaghan/scheduler/db"
 )
 
-func GetCourse(q *db.Queries) http.HandlerFunc {
+type CourseGetter interface {
+	GetCourse(ctx context.Context, id int32) (db.Course, error)
+}
+
+func GetCourse(store CourseGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idParam := chi.URLParam(r, "id")
 		if idParam == "" {
@@ -26,7 +31,7 @@ func GetCourse(q *db.Queries) http.HandlerFunc {
 			return
 		}
 
-		course, err := q.GetCourse(r.Context(), int32(id))
+		course, err := store.GetCourse(r.Context(), int32(id))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "course not found", http.StatusNotFound)
@@ -45,5 +50,3 @@ func GetCourse(q *db.Queries) http.HandlerFunc {
 		}
 	}
 }
-
-

@@ -36,14 +36,14 @@ func (s *Server) MountHandlers() {
 	s.Router.Use(middleware.Logger)
 
 	// Mount all handlers here
-	s.Router.Get("/v1/healthcheck", handlers.Healthcheck(s.Queries))
+	s.Router.Get("/v1/healthcheck", handlers.Healthcheck())
 	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
 }
 
 func main() {
 	ctx := context.Background()
 
-	// Connect to database (and run migrations)
+	// Connect to database
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "appuser:admin@tcp(localhost:3306)/scheduler"

@@ -46,7 +46,7 @@ func main() {
 	// Connect to database
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "appuser:admin@tcp(localhost:3306)/scheduler"
+		dbURL = "scheduler.db"
 	}
 
 	sqlDB, err := database.Open(ctx, database.Config{DSN: dbURL})

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Config struct {
@@ -15,7 +15,7 @@ type Config struct {
 
 // Open connects to the database, verifies the connection, and returns the initialized *sql.DB.
 func Open(ctx context.Context, cfg Config) (*sql.DB, error) {
-	db, err := sql.Open("mysql", cfg.DSN)
+	db, err := sql.Open("sqlite3", cfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
@@ -30,5 +30,3 @@ func Open(ctx context.Context, cfg Config) (*sql.DB, error) {
 
 	return db, nil
 }
-
-

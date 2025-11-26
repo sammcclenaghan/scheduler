@@ -1,8 +1,8 @@
 -- +goose Up
 CREATE TABLE courses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     title TEXT NOT NULL,
     pid VARCHAR(255) NOT NULL UNIQUE,
     subject_code VARCHAR(50) NOT NULL DEFAULT '',
@@ -10,20 +10,22 @@ CREATE TABLE courses (
     credits VARCHAR(50) NOT NULL DEFAULT '',
     hours_catalog_text TEXT NOT NULL,
     notes TEXT NOT NULL,
-    pre_and_corequisites TEXT NOT NULL,
-
-    INDEX idx_courses_pid (pid),
-    INDEX idx_courses_subject_code (subject_code),
-    INDEX idx_courses_created_at (created_at),
-    INDEX idx_courses_description (description(255)),
-    INDEX idx_courses_subject_id (subject_code, pid),
-    INDEX idx_courses_pre_and_coreq (pre_and_corequisites(255))
+    pre_and_corequisites TEXT NOT NULL
 );
 
+CREATE INDEX idx_courses_pid ON courses(pid);
+CREATE INDEX idx_courses_subject_code ON courses(subject_code);
+CREATE INDEX idx_courses_created_at ON courses(created_at);
+-- SQLite does not support prefix indexing
+CREATE INDEX idx_courses_description ON courses(description);
+CREATE INDEX idx_courses_subject_id ON courses(subject_code, pid);
+-- SQLite does not support prefix indexing
+CREATE INDEX idx_courses_pre_and_coreq ON courses(pre_and_corequisites);
+
 CREATE TABLE sections (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     term VARCHAR(50) NOT NULL,
     crn VARCHAR(50) NOT NULL,
@@ -52,14 +54,14 @@ CREATE TABLE sections (
     waitlist_actual INT NOT NULL DEFAULT 0,
     waitlist_seats_available INT NOT NULL DEFAULT 0,
 
-    UNIQUE KEY unique_term_crn (term, crn),
-    FOREIGN KEY (course_pid) REFERENCES courses(pid) ON DELETE SET NULL,
-
-    INDEX idx_sections_term_crn (term, crn),
-    INDEX idx_sections_course_pid (course_pid),
-    INDEX idx_sections_subject_number (subject, course_number),
-    INDEX idx_sections_instructor (instructor)
+    UNIQUE (term, crn),
+    FOREIGN KEY (course_pid) REFERENCES courses(pid) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_sections_term_crn ON sections(term, crn);
+CREATE INDEX idx_sections_course_pid ON sections(course_pid);
+CREATE INDEX idx_sections_subject_number ON sections(subject, course_number);
+CREATE INDEX idx_sections_instructor ON sections(instructor);
 
 -- +goose Down
 DROP TABLE IF EXISTS sections;

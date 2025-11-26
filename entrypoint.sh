@@ -2,13 +2,19 @@
 
 set -euo pipefail
 
-DB_URL="${DATABASE_URL:-appuser:admin@tcp(localhost:3306)/scheduler}"
+DB_URL="${DATABASE_URL:-/data/scheduler.db}"
 
-if [ -v RUN_MIGRATIONS ]; then
-	# Run migrations before starting server
-	goose -dir /migrations mysql "$DB_URL" up
-fi
+# Ensure database directory exists
+DB_DIR=$(dirname "$DB_URL")
+mkdir -p "$DB_DIR"
 
-# Start server
-exec /go/bin/app
+# Run migrations before starting server
+echo "Running migrations..."
+goose -dir /migrations sqlite3 "$DB_URL" up
+
+# Start server in background
+/app &
+
+# Start Caddy
+caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
 

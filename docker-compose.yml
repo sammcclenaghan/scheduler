@@ -1,39 +1,11 @@
 version: "3.8"
 
 services:
-  go-api:
+  app:
     build: .
-    container_name: go-api
-    expose:
-      - "4000"
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=appuser:admin@tcp(db:3306)/scheduler
-    depends_on:
-      - db
-
-  db:
-    image: mysql:8-oracle
-    container_name: db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: appuser
-      MYSQL_PASSWORD: admin
-      MYSQL_DATABASE: scheduler
-    volumes:
-      - db-data:/var/lib/mysql
-
-  caddy:
-    image: caddy:2.10-alpine
-    container_name: caddy
     ports:
-      - "4002:80"
+      - "4002:8080"
+    environment:
+      - DATABASE_URL=/data/scheduler.db
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-    restart: unless-stopped
-    depends_on:
-      - go-api
-
-volumes:
-  db-data:
+      - ./data:/data

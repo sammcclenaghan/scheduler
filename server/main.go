@@ -36,7 +36,7 @@ func (s *Server) MountHandlers() {
 	s.Router.Use(middleware.Logger)
 
 	// Mount all handlers here
-	s.Router.Get("/v1/healthcheck", handlers.Healthcheck())
+	s.Router.Get("/api/healthcheck", handlers.Healthcheck())
 	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
 }
 

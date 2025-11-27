@@ -22,9 +22,9 @@ RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 FROM node:20-alpine as node_builder
 WORKDIR /client
 COPY client/package*.json ./
-RUN pnpm install
+RUN npm install
 COPY client/ .
-RUN pnpm run build
+RUN npm run build
 
 # Stage 3: Final Image (Caddy + Go)
 FROM caddy:2.7-alpine

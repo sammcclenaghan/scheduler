@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const getCourse = `-- name: GetCourse :one
@@ -116,7 +115,7 @@ WHERE course_pid = ?
 ORDER BY term DESC, crn ASC
 `
 
-func (q *Queries) ListSectionsByCourse(ctx context.Context, coursePid sql.NullString) ([]Section, error) {
+func (q *Queries) ListSectionsByCourse(ctx context.Context, coursePid *string) ([]Section, error) {
 	rows, err := q.db.QueryContext(ctx, listSectionsByCourse, coursePid)
 	if err != nil {
 		return nil, err
@@ -174,8 +173,8 @@ ORDER BY crn ASC
 `
 
 type ListSectionsByCourseAndTermParams struct {
-	CoursePid sql.NullString `json:"coursePid"`
-	Term      string         `json:"term"`
+	CoursePid *string `json:"coursePid"`
+	Term      string  `json:"term"`
 }
 
 func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSectionsByCourseAndTermParams) ([]Section, error) {
@@ -296,29 +295,29 @@ ON CONFLICT(term, crn) DO UPDATE SET
 `
 
 type UpsertSectionParams struct {
-	Term                     string         `json:"term"`
-	Crn                      string         `json:"crn"`
-	CoursePid                sql.NullString `json:"coursePid"`
-	Subject                  string         `json:"subject"`
-	CourseNumber             string         `json:"courseNumber"`
-	CourseName               string         `json:"courseName"`
-	Section                  string         `json:"section"`
-	ScheduleType             string         `json:"scheduleType"`
-	InstructionalMethod      string         `json:"instructionalMethod"`
-	Frequency                string         `json:"frequency"`
-	Time                     string         `json:"time"`
-	Days                     string         `json:"days"`
-	Location                 string         `json:"location"`
-	DateRange                string         `json:"dateRange"`
-	Instructor               string         `json:"instructor"`
-	Units                    string         `json:"units"`
-	AdditionalInformation    string         `json:"additionalInformation"`
-	EnrollmentActual         int64          `json:"enrollmentActual"`
-	EnrollmentMaximum        int64          `json:"enrollmentMaximum"`
-	EnrollmentSeatsAvailable int64          `json:"enrollmentSeatsAvailable"`
-	WaitlistCapacity         int64          `json:"waitlistCapacity"`
-	WaitlistActual           int64          `json:"waitlistActual"`
-	WaitlistSeatsAvailable   int64          `json:"waitlistSeatsAvailable"`
+	Term                     string  `json:"term"`
+	Crn                      string  `json:"crn"`
+	CoursePid                *string `json:"coursePid"`
+	Subject                  string  `json:"subject"`
+	CourseNumber             string  `json:"courseNumber"`
+	CourseName               string  `json:"courseName"`
+	Section                  string  `json:"section"`
+	ScheduleType             string  `json:"scheduleType"`
+	InstructionalMethod      string  `json:"instructionalMethod"`
+	Frequency                string  `json:"frequency"`
+	Time                     string  `json:"time"`
+	Days                     string  `json:"days"`
+	Location                 string  `json:"location"`
+	DateRange                string  `json:"dateRange"`
+	Instructor               string  `json:"instructor"`
+	Units                    string  `json:"units"`
+	AdditionalInformation    string  `json:"additionalInformation"`
+	EnrollmentActual         int64   `json:"enrollmentActual"`
+	EnrollmentMaximum        int64   `json:"enrollmentMaximum"`
+	EnrollmentSeatsAvailable int64   `json:"enrollmentSeatsAvailable"`
+	WaitlistCapacity         int64   `json:"waitlistCapacity"`
+	WaitlistActual           int64   `json:"waitlistActual"`
+	WaitlistSeatsAvailable   int64   `json:"waitlistSeatsAvailable"`
 }
 
 func (q *Queries) UpsertSection(ctx context.Context, arg UpsertSectionParams) error {

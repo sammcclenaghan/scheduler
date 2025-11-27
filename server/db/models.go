@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -24,30 +23,30 @@ type Course struct {
 }
 
 type Section struct {
-	ID                       int64          `json:"id"`
-	CreatedAt                time.Time      `json:"createdAt"`
-	UpdatedAt                time.Time      `json:"updatedAt"`
-	Term                     string         `json:"term"`
-	Crn                      string         `json:"crn"`
-	CoursePid                sql.NullString `json:"coursePid"`
-	Subject                  string         `json:"subject"`
-	CourseNumber             string         `json:"courseNumber"`
-	CourseName               string         `json:"courseName"`
-	Section                  string         `json:"section"`
-	ScheduleType             string         `json:"scheduleType"`
-	InstructionalMethod      string         `json:"instructionalMethod"`
-	Frequency                string         `json:"frequency"`
-	Time                     string         `json:"time"`
-	Days                     string         `json:"days"`
-	Location                 string         `json:"location"`
-	DateRange                string         `json:"dateRange"`
-	Instructor               string         `json:"instructor"`
-	Units                    string         `json:"units"`
-	AdditionalInformation    string         `json:"additionalInformation"`
-	EnrollmentActual         int64          `json:"enrollmentActual"`
-	EnrollmentMaximum        int64          `json:"enrollmentMaximum"`
-	EnrollmentSeatsAvailable int64          `json:"enrollmentSeatsAvailable"`
-	WaitlistCapacity         int64          `json:"waitlistCapacity"`
-	WaitlistActual           int64          `json:"waitlistActual"`
-	WaitlistSeatsAvailable   int64          `json:"waitlistSeatsAvailable"`
+	ID                       int64     `json:"id"`
+	CreatedAt                time.Time `json:"createdAt"`
+	UpdatedAt                time.Time `json:"updatedAt"`
+	Term                     string    `json:"term"`
+	Crn                      string    `json:"crn"`
+	CoursePid                *string   `json:"coursePid"`
+	Subject                  string    `json:"subject"`
+	CourseNumber             string    `json:"courseNumber"`
+	CourseName               string    `json:"courseName"`
+	Section                  string    `json:"section"`
+	ScheduleType             string    `json:"scheduleType"`
+	InstructionalMethod      string    `json:"instructionalMethod"`
+	Frequency                string    `json:"frequency"`
+	Time                     string    `json:"time"`
+	Days                     string    `json:"days"`
+	Location                 string    `json:"location"`
+	DateRange                string    `json:"dateRange"`
+	Instructor               string    `json:"instructor"`
+	Units                    string    `json:"units"`
+	AdditionalInformation    string    `json:"additionalInformation"`
+	EnrollmentActual         int64     `json:"enrollmentActual"`
+	EnrollmentMaximum        int64     `json:"enrollmentMaximum"`
+	EnrollmentSeatsAvailable int64     `json:"enrollmentSeatsAvailable"`
+	WaitlistCapacity         int64     `json:"waitlistCapacity"`
+	WaitlistActual           int64     `json:"waitlistActual"`
+	WaitlistSeatsAvailable   int64     `json:"waitlistSeatsAvailable"`
 }

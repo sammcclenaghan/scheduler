@@ -70,8 +70,8 @@ LIMIT ? OFFSET ?
 `
 
 type ListCoursesParams struct {
-	Limit  int64
-	Offset int64
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
 }
 
 func (q *Queries) ListCourses(ctx context.Context, arg ListCoursesParams) ([]Course, error) {
@@ -174,8 +174,8 @@ ORDER BY crn ASC
 `
 
 type ListSectionsByCourseAndTermParams struct {
-	CoursePid sql.NullString
-	Term      string
+	CoursePid sql.NullString `json:"coursePid"`
+	Term      string         `json:"term"`
 }
 
 func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSectionsByCourseAndTermParams) ([]Section, error) {
@@ -243,14 +243,14 @@ ON CONFLICT(pid) DO UPDATE SET
 `
 
 type UpsertCourseParams struct {
-	Title              string
-	Pid                string
-	SubjectCode        string
-	Description        string
-	Credits            string
-	HoursCatalogText   string
-	Notes              string
-	PreAndCorequisites string
+	Title              string `json:"title"`
+	Pid                string `json:"pid"`
+	SubjectCode        string `json:"subjectCode"`
+	Description        string `json:"description"`
+	Credits            string `json:"credits"`
+	HoursCatalogText   string `json:"hoursCatalogText"`
+	Notes              string `json:"notes"`
+	PreAndCorequisites string `json:"preAndCorequisites"`
 }
 
 func (q *Queries) UpsertCourse(ctx context.Context, arg UpsertCourseParams) error {
@@ -296,29 +296,29 @@ ON CONFLICT(term, crn) DO UPDATE SET
 `
 
 type UpsertSectionParams struct {
-	Term                     string
-	Crn                      string
-	CoursePid                sql.NullString
-	Subject                  string
-	CourseNumber             string
-	CourseName               string
-	Section                  string
-	ScheduleType             string
-	InstructionalMethod      string
-	Frequency                string
-	Time                     string
-	Days                     string
-	Location                 string
-	DateRange                string
-	Instructor               string
-	Units                    string
-	AdditionalInformation    string
-	EnrollmentActual         int64
-	EnrollmentMaximum        int64
-	EnrollmentSeatsAvailable int64
-	WaitlistCapacity         int64
-	WaitlistActual           int64
-	WaitlistSeatsAvailable   int64
+	Term                     string         `json:"term"`
+	Crn                      string         `json:"crn"`
+	CoursePid                sql.NullString `json:"coursePid"`
+	Subject                  string         `json:"subject"`
+	CourseNumber             string         `json:"courseNumber"`
+	CourseName               string         `json:"courseName"`
+	Section                  string         `json:"section"`
+	ScheduleType             string         `json:"scheduleType"`
+	InstructionalMethod      string         `json:"instructionalMethod"`
+	Frequency                string         `json:"frequency"`
+	Time                     string         `json:"time"`
+	Days                     string         `json:"days"`
+	Location                 string         `json:"location"`
+	DateRange                string         `json:"dateRange"`
+	Instructor               string         `json:"instructor"`
+	Units                    string         `json:"units"`
+	AdditionalInformation    string         `json:"additionalInformation"`
+	EnrollmentActual         int64          `json:"enrollmentActual"`
+	EnrollmentMaximum        int64          `json:"enrollmentMaximum"`
+	EnrollmentSeatsAvailable int64          `json:"enrollmentSeatsAvailable"`
+	WaitlistCapacity         int64          `json:"waitlistCapacity"`
+	WaitlistActual           int64          `json:"waitlistActual"`
+	WaitlistSeatsAvailable   int64          `json:"waitlistSeatsAvailable"`
 }
 
 func (q *Queries) UpsertSection(ctx context.Context, arg UpsertSectionParams) error {

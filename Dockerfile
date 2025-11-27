@@ -45,6 +45,7 @@ COPY --from=builder /app /app
 # Copy Migrations and Script
 COPY server/db/migrations /migrations
 COPY entrypoint.sh /entrypoint.sh
+COPY courses.json /courses.json
 RUN chmod +x /entrypoint.sh
 
 # Environment Defaults

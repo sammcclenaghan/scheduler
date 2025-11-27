@@ -16,6 +16,8 @@ function CourseDetail() {
     error,
   } = useQuery(courseQueries.detail(id));
 
+  console.log(course);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -49,9 +51,6 @@ function CourseDetail() {
         <div className="mb-4">
           <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
             {course.subjectCode}
-          </span>
-          <span className="ml-2 text-sm text-gray-500">
-            {course.credits} credits
           </span>
         </div>
 

@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,29 +10,32 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/sammcclenaghan/scheduler/db"
 	"github.com/sammcclenaghan/scheduler/internal/database"
 	"github.com/sammcclenaghan/scheduler/internal/handlers"
+	"github.com/sammcclenaghan/scheduler/internal/logger"
+	"github.com/sammcclenaghan/scheduler/internal/middleware"
 )
 
 type Server struct {
 	Router  *chi.Mux
 	Queries *db.Queries
+	Logger  *slog.Logger
 }
 
-func CreateNewServer(queries *db.Queries) *Server {
+func CreateNewServer(queries *db.Queries, log *slog.Logger) *Server {
 	s := &Server{
 		Router:  chi.NewRouter(),
 		Queries: queries,
+		Logger:  log,
 	}
 	return s
 }
 
 func (s *Server) MountHandlers() {
 	// Mount all middleware here
-	s.Router.Use(middleware.Logger)
+	s.Router.Use(middleware.Logger(s.Logger))
 
 	// Mount all handlers here
 	s.Router.Get("/api/healthcheck", handlers.Healthcheck())
@@ -42,6 +44,7 @@ func (s *Server) MountHandlers() {
 
 func main() {
 	ctx := context.Background()
+	log := logger.New(os.Stdout)
 
 	// Connect to database
 	dbURL := os.Getenv("DATABASE_URL")
@@ -51,13 +54,13 @@ func main() {
 
 	sqlDB, err := database.Open(ctx, database.Config{DSN: dbURL})
 	if err != nil {
-		log.Fatalf("database init failed: %v", err)
+		logger.Fatal(log, "database init failed", err)
 	}
 	defer sqlDB.Close()
 
 	queries := db.New(sqlDB)
 
-	s := CreateNewServer(queries)
+	s := CreateNewServer(queries, log)
 	s.MountHandlers()
 
 	srv := &http.Server{
@@ -70,20 +73,20 @@ func main() {
 
 	// Runs the server in a goroutine
 	go func() {
-		fmt.Println("Server started at :4000")
+		logger.Info(log, "server starting", slog.String("addr", ":4000"))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("Could not listen on port 4000: %v\n", err)
+			logger.Error(log, "listen failed", err, slog.String("port", "4000"))
 		}
 	}()
 
 	<-stop
 
-	fmt.Println("Shutting down server...")
+	logger.Info(log, "shutting down server")
 
 	ctxShutdown, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctxShutdown); err != nil {
-		fmt.Printf("Server shutdown failed: %v\n", err)
+		logger.Error(log, "shutdown failed", err)
 	}
 }

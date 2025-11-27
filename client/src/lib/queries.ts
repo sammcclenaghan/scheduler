@@ -16,6 +16,18 @@ export const courseQueries = {
       queryKey: ["courses", id],
       queryFn: () => coursesApi.getCourse(id),
     }),
+
+  /**
+   * Search courses by subject code prefix.
+   * @example
+   * const { data } = useQuery(courseQueries.search("CSC1"));
+   */
+  search: (query: string) =>
+    queryOptions({
+      queryKey: ["courses", "search", query],
+      queryFn: () => coursesApi.search(query),
+      enabled: query.length > 0,
+    }),
 };
 
 /**

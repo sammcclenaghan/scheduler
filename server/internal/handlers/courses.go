@@ -17,6 +17,10 @@ type CourseGetter interface {
 	GetCourse(ctx context.Context, id int64) (db.Course, error)
 }
 
+type CourseSearcher interface {
+	SearchCoursesBySubjectCode(ctx context.Context, subjectCode *string) ([]db.Course, error)
+}
+
 func GetCourse(store CourseGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idParam := chi.URLParam(r, "id")
@@ -45,6 +49,28 @@ func GetCourse(store CourseGetter) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(course); err != nil {
 			// If we fail to encode, there isn't much we can do besides return 500.
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func SearchCourses(store CourseSearcher) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			http.Error(w, "missing q parameter", http.StatusBadRequest)
+			return
+		}
+
+		courses, err := store.SearchCoursesBySubjectCode(r.Context(), &query)
+		if err != nil {
+			http.Error(w, "failed to search courses", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(courses); err != nil {
 			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 			return
 		}

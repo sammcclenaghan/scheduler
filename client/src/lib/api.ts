@@ -32,6 +32,15 @@ export const coursesApi = {
    */
   getCourse: (id: number): Promise<Course> =>
     fetchJson<Course>(`${API_BASE}/courses/${id}`),
+
+  /**
+   * Search courses by subject code prefix.
+   * @param query - The search query (e.g., "CSC1")
+   */
+  search: (query: string): Promise<Course[]> =>
+    fetchJson<Course[]>(
+      `${API_BASE}/search/courses?q=${encodeURIComponent(query)}`
+    ),
 };
 
 /**

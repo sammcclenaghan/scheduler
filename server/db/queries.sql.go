@@ -227,6 +227,49 @@ func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSecti
 	return items, nil
 }
 
+const searchCoursesBySubjectCode = `-- name: SearchCoursesBySubjectCode :many
+SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
+FROM courses
+WHERE subject_code LIKE ? || '%'
+ORDER BY subject_code
+LIMIT 50
+`
+
+func (q *Queries) SearchCoursesBySubjectCode(ctx context.Context, dollar_1 *string) ([]Course, error) {
+	rows, err := q.db.QueryContext(ctx, searchCoursesBySubjectCode, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Course
+	for rows.Next() {
+		var i Course
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Pid,
+			&i.SubjectCode,
+			&i.Description,
+			&i.Credits,
+			&i.HoursCatalogText,
+			&i.Notes,
+			&i.PreAndCorequisites,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertCourse = `-- name: UpsertCourse :exec
 INSERT INTO courses (title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)

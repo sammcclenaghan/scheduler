@@ -43,6 +43,7 @@ func (s *Server) MountHandlers() {
 	// Mount all handlers here
 	s.Router.Get("/api/healthcheck", handlers.Healthcheck())
 	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
+	s.Router.Get("/api/search/courses", handlers.SearchCourses(s.Queries))
 	s.Router.Get("/api/sections/{pid}", handlers.ListSectionsByPID(s.Queries))
 	s.Router.Get("/api/sections/{pid}/{term}", handlers.ListSectionsByPID(s.Queries))
 }

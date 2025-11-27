@@ -118,7 +118,7 @@ func fetchSection(ctx context.Context, s *scraper.Scraper, q *db.Queries, subjec
 			err := q.UpsertSection(ctx, db.UpsertSectionParams{
 				Term:                     sec.Term,
 				Crn:                      sec.CRN,
-				CoursePid:                sql.NullString{String: pid, Valid: pid != ""},
+				CoursePid:                &pid,
 				Subject:                  sec.Subject,
 				CourseNumber:             sec.CourseNumber,
 				CourseName:               sec.CourseName,
@@ -171,25 +171,25 @@ COMMANDS:
 OPTIONS:
   -cmd string
     	Command to execute (default: help)
-  
+
   -pid string
     	Course PID (required for fetch-course)
-  
+
   -subject string
     	Course subject code (required for fetch-section, e.g., CSC)
-  
+
   -number string
     	Course number (required for fetch-section, e.g., 111)
-  
+
   -term string
     	Term code (required for fetch-section, e.g., 202409)
-  
+
   -catalog string
     	Catalog ID (optional, uses default if not provided)
-  
+
   -courses string
     	Path to courses.json for indexing (optional)
-  
+
   -db string
     	Path to SQLite database (optional, if provided data will be saved)
 

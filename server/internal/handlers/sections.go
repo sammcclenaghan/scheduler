@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 type SectionsLister interface {
 	ListSectionsByCourseAndTerm(ctx context.Context, arg db.ListSectionsByCourseAndTermParams) ([]db.Section, error)
-	ListSectionsByCourse(ctx context.Context, coursePid sql.NullString) ([]db.Section, error)
+	ListSectionsByCourse(ctx context.Context, coursePid *string) ([]db.Section, error)
 }
 
 type GroupedSections struct {
@@ -35,11 +34,11 @@ func ListSectionsByPID(store SectionsLister) http.HandlerFunc {
 
 		if term != "" {
 			sections, err = store.ListSectionsByCourseAndTerm(r.Context(), db.ListSectionsByCourseAndTermParams{
-				CoursePid: sql.NullString{String: pid, Valid: true},
+				CoursePid: &pid,
 				Term:      term,
 			})
 		} else {
-			sections, err = store.ListSectionsByCourse(r.Context(), sql.NullString{String: pid, Valid: true})
+			sections, err = store.ListSectionsByCourse(r.Context(), &pid)
 		}
 
 		if err != nil {

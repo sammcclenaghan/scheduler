@@ -10,7 +10,7 @@ import (
 )
 
 type Course struct {
-	ID                 int32
+	ID                 int64
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 	Title              string
@@ -24,7 +24,7 @@ type Course struct {
 }
 
 type Section struct {
-	ID                       int32
+	ID                       int64
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	Term                     string
@@ -44,10 +44,10 @@ type Section struct {
 	Instructor               string
 	Units                    string
 	AdditionalInformation    string
-	EnrollmentActual         int32
-	EnrollmentMaximum        int32
-	EnrollmentSeatsAvailable int32
-	WaitlistCapacity         int32
-	WaitlistActual           int32
-	WaitlistSeatsAvailable   int32
+	EnrollmentActual         int64
+	EnrollmentMaximum        int64
+	EnrollmentSeatsAvailable int64
+	WaitlistCapacity         int64
+	WaitlistActual           int64
+	WaitlistSeatsAvailable   int64
 }

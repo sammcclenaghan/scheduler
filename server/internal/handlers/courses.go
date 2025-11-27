@@ -14,7 +14,7 @@ import (
 )
 
 type CourseGetter interface {
-	GetCourse(ctx context.Context, id int32) (db.Course, error)
+	GetCourse(ctx context.Context, id int64) (db.Course, error)
 }
 
 func GetCourse(store CourseGetter) http.HandlerFunc {
@@ -25,13 +25,13 @@ func GetCourse(store CourseGetter) http.HandlerFunc {
 			return
 		}
 
-		id, err := strconv.ParseInt(idParam, 10, 32)
+		id, err := strconv.ParseInt(idParam, 10, 64)
 		if err != nil {
 			http.Error(w, "invalid id parameter", http.StatusBadRequest)
 			return
 		}
 
-		course, err := store.GetCourse(r.Context(), int32(id))
+		course, err := store.GetCourse(r.Context(), id)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "course not found", http.StatusNotFound)

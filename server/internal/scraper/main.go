@@ -11,12 +11,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/html"
 )
 
 const DefaultCatalogID = "65eb47906641d7001c157bc4"
+
+var (
+	creditsRe             = regexp.MustCompile(`^(\d+\.\d+)\s*Credits$`)
+	instructionalMethodRe = regexp.MustCompile(`^(.*)\s+Instructional Method$`)
+	enrollmentRe          = regexp.MustCompile(`:</span>\s*<span[^>]*>(\d+)`)
+)
 
 type CourseInfo struct {
 	SubjectCode        string `json:"subject_code"`
@@ -57,8 +64,8 @@ type SectionInfo struct {
 type Index map[string]string
 
 type Scraper struct {
-	Client    *http.Client
-	CatalogID string
+	client    *http.Client
+	catalogID string
 	Index     Index
 }
 
@@ -73,8 +80,13 @@ func New(coursesJSONPath, catalogID string) (*Scraper, error) {
 		}
 	}
 	return &Scraper{
-		Client:    &http.Client{Timeout: 15 * time.Second},
-		CatalogID: catalogID,
+		client: &http.Client{
+			Timeout: 15 * time.Second,
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		catalogID: catalogID,
 		Index:     idx,
 	}, nil
 }
@@ -102,15 +114,14 @@ func loadIndex(path string, idx Index) error {
 }
 
 func (s *Scraper) FetchCourseInfo(ctx context.Context, pid string) (CourseInfo, error) {
-	url := "https://uvic.kuali.co/api/v1/catalog/course/" + s.CatalogID + "/" + pid
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		"https://uvic.kuali.co/api/v1/catalog/course/"+s.catalogID+"/"+pid, nil)
 	if err != nil {
 		return CourseInfo{}, err
 	}
 	req.Header.Set("User-Agent", "pace-scraper/1.0")
 
-	resp, err := s.Client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return CourseInfo{}, err
 	}
@@ -121,13 +132,8 @@ func (s *Scraper) FetchCourseInfo(ctx context.Context, pid string) (CourseInfo, 
 		return CourseInfo{}, fmt.Errorf("uvic fetch failed (status=%d): %s", resp.StatusCode, body)
 	}
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return CourseInfo{}, err
-	}
-
 	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return CourseInfo{}, err
 	}
 
@@ -161,12 +167,7 @@ func (s *Scraper) FetchSectionInfo(ctx context.Context, subject, courseNumber, t
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	client := &http.Client{
-		Timeout:       s.Client.Timeout,
-		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-	}
-
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -204,13 +205,23 @@ func (s *Scraper) parseHTML(ctx context.Context, body, term, subject, courseNumb
 		return nil, fmt.Errorf("no sections found in HTML")
 	}
 
-	for i := range sections {
-		if sections[i].CRN != "" {
-			s.enrichEnrollment(ctx, &sections[i])
-		}
-	}
-
+	s.enrichEnrollmentParallel(ctx, sections)
 	return sections, nil
+}
+
+func (s *Scraper) enrichEnrollmentParallel(ctx context.Context, sections []SectionInfo) {
+	var wg sync.WaitGroup
+	for i := range sections {
+		if sections[i].CRN == "" {
+			continue
+		}
+		wg.Add(1)
+		go func(sec *SectionInfo) {
+			defer wg.Done()
+			s.enrichEnrollment(ctx, sec)
+		}(&sections[i])
+	}
+	wg.Wait()
 }
 
 func parseSection(titleNode *html.Node, term, subject, courseNumber string) *SectionInfo {
@@ -237,7 +248,6 @@ func parseSection(titleNode *html.Node, term, subject, courseNumber string) *Sec
 	if details := findDetailsNode(titleNode); details != nil {
 		parseDetails(details, sec)
 	}
-
 	return sec
 }
 
@@ -278,10 +288,10 @@ func parseDetails(node *html.Node, sec *SectionInfo) {
 	lines := splitLines(text)
 
 	for _, line := range lines {
-		if m := regexp.MustCompile(`^(\d+\.\d+)\s*Credits$`).FindStringSubmatch(line); m != nil {
+		if m := creditsRe.FindStringSubmatch(line); m != nil {
 			sec.Units = m[1]
 		}
-		if m := regexp.MustCompile(`^(.*)\s+Instructional Method$`).FindStringSubmatch(line); m != nil {
+		if m := instructionalMethodRe.FindStringSubmatch(line); m != nil {
 			sec.InstructionalMethod = m[1]
 		}
 	}
@@ -357,7 +367,7 @@ func (s *Scraper) enrichEnrollment(ctx context.Context, sec *SectionInfo) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 
-	resp, err := s.Client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
 			resp.Body.Close()
@@ -370,8 +380,11 @@ func (s *Scraper) enrichEnrollment(ctx context.Context, sec *SectionInfo) {
 	htmlStr := string(data)
 
 	extract := func(label string) int {
-		re := regexp.MustCompile(regexp.QuoteMeta(label) + `:</span>\s*<span[^>]*>(\d+)`)
-		if m := re.FindStringSubmatch(htmlStr); len(m) == 2 {
+		idx := strings.Index(htmlStr, label+":</span>")
+		if idx == -1 {
+			return 0
+		}
+		if m := enrollmentRe.FindStringSubmatch(htmlStr[idx+len(label):]); len(m) == 2 {
 			v, _ := strconv.Atoi(m[1])
 			return v
 		}

@@ -19,7 +19,7 @@ func Logger(logger *slog.Logger) func(next http.Handler) http.Handler {
 			next.ServeHTTP(ww, r)
 			t2 := time.Since(t1)
 
-			logger.LogAttrs(context.TODO, slog.LevelInfo, "request",
+			logger.LogAttrs(context.TODO(), slog.LevelInfo, "request",
 				slog.String("method", r.Method),
 				slog.String("path", r.RequestURI),
 				slog.Int("status", ww.Status()),

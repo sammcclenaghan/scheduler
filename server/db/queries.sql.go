@@ -7,118 +7,7 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
-
-const createCourse = `-- name: CreateCourse :exec
-INSERT INTO courses (title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`
-
-type CreateCourseParams struct {
-	Title              string
-	Pid                string
-	SubjectCode        string
-	Description        string
-	Credits            string
-	HoursCatalogText   string
-	Notes              string
-	PreAndCorequisites string
-}
-
-func (q *Queries) CreateCourse(ctx context.Context, arg CreateCourseParams) error {
-	_, err := q.db.ExecContext(ctx, createCourse,
-		arg.Title,
-		arg.Pid,
-		arg.SubjectCode,
-		arg.Description,
-		arg.Credits,
-		arg.HoursCatalogText,
-		arg.Notes,
-		arg.PreAndCorequisites,
-	)
-	return err
-}
-
-const createSection = `-- name: CreateSection :exec
-INSERT INTO sections (term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`
-
-type CreateSectionParams struct {
-	Term                     string
-	Crn                      string
-	CoursePid                sql.NullString
-	Subject                  string
-	CourseNumber             string
-	CourseName               string
-	Section                  string
-	ScheduleType             string
-	InstructionalMethod      string
-	Frequency                string
-	Time                     string
-	Days                     string
-	Location                 string
-	DateRange                string
-	Instructor               string
-	Units                    string
-	AdditionalInformation    string
-	EnrollmentActual         int32
-	EnrollmentMaximum        int32
-	EnrollmentSeatsAvailable int32
-	WaitlistCapacity         int32
-	WaitlistActual           int32
-	WaitlistSeatsAvailable   int32
-}
-
-func (q *Queries) CreateSection(ctx context.Context, arg CreateSectionParams) error {
-	_, err := q.db.ExecContext(ctx, createSection,
-		arg.Term,
-		arg.Crn,
-		arg.CoursePid,
-		arg.Subject,
-		arg.CourseNumber,
-		arg.CourseName,
-		arg.Section,
-		arg.ScheduleType,
-		arg.InstructionalMethod,
-		arg.Frequency,
-		arg.Time,
-		arg.Days,
-		arg.Location,
-		arg.DateRange,
-		arg.Instructor,
-		arg.Units,
-		arg.AdditionalInformation,
-		arg.EnrollmentActual,
-		arg.EnrollmentMaximum,
-		arg.EnrollmentSeatsAvailable,
-		arg.WaitlistCapacity,
-		arg.WaitlistActual,
-		arg.WaitlistSeatsAvailable,
-	)
-	return err
-}
-
-const deleteCourse = `-- name: DeleteCourse :exec
-DELETE FROM courses
-WHERE id = ?
-`
-
-func (q *Queries) DeleteCourse(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, deleteCourse, id)
-	return err
-}
-
-const deleteSection = `-- name: DeleteSection :exec
-DELETE FROM sections
-WHERE id = ?
-`
-
-func (q *Queries) DeleteSection(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, deleteSection, id)
-	return err
-}
 
 const getCourse = `-- name: GetCourse :one
 
@@ -128,7 +17,7 @@ WHERE id = ? LIMIT 1
 `
 
 // Courses queries
-func (q *Queries) GetCourse(ctx context.Context, id int32) (Course, error) {
+func (q *Queries) GetCourse(ctx context.Context, id int64) (Course, error) {
 	row := q.db.QueryRowContext(ctx, getCourse, id)
 	var i Course
 	err := row.Scan(
@@ -172,93 +61,6 @@ func (q *Queries) GetCourseByPID(ctx context.Context, pid string) (Course, error
 	return i, err
 }
 
-const getSection = `-- name: GetSection :one
-
-SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
-FROM sections
-WHERE id = ? LIMIT 1
-`
-
-// Sections queries
-func (q *Queries) GetSection(ctx context.Context, id int32) (Section, error) {
-	row := q.db.QueryRowContext(ctx, getSection, id)
-	var i Section
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Term,
-		&i.Crn,
-		&i.CoursePid,
-		&i.Subject,
-		&i.CourseNumber,
-		&i.CourseName,
-		&i.Section,
-		&i.ScheduleType,
-		&i.InstructionalMethod,
-		&i.Frequency,
-		&i.Time,
-		&i.Days,
-		&i.Location,
-		&i.DateRange,
-		&i.Instructor,
-		&i.Units,
-		&i.AdditionalInformation,
-		&i.EnrollmentActual,
-		&i.EnrollmentMaximum,
-		&i.EnrollmentSeatsAvailable,
-		&i.WaitlistCapacity,
-		&i.WaitlistActual,
-		&i.WaitlistSeatsAvailable,
-	)
-	return i, err
-}
-
-const getSectionByTermCRN = `-- name: GetSectionByTermCRN :one
-SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
-FROM sections
-WHERE term = ? AND crn = ? LIMIT 1
-`
-
-type GetSectionByTermCRNParams struct {
-	Term string
-	Crn  string
-}
-
-func (q *Queries) GetSectionByTermCRN(ctx context.Context, arg GetSectionByTermCRNParams) (Section, error) {
-	row := q.db.QueryRowContext(ctx, getSectionByTermCRN, arg.Term, arg.Crn)
-	var i Section
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Term,
-		&i.Crn,
-		&i.CoursePid,
-		&i.Subject,
-		&i.CourseNumber,
-		&i.CourseName,
-		&i.Section,
-		&i.ScheduleType,
-		&i.InstructionalMethod,
-		&i.Frequency,
-		&i.Time,
-		&i.Days,
-		&i.Location,
-		&i.DateRange,
-		&i.Instructor,
-		&i.Units,
-		&i.AdditionalInformation,
-		&i.EnrollmentActual,
-		&i.EnrollmentMaximum,
-		&i.EnrollmentSeatsAvailable,
-		&i.WaitlistCapacity,
-		&i.WaitlistActual,
-		&i.WaitlistSeatsAvailable,
-	)
-	return i, err
-}
-
 const listCourses = `-- name: ListCourses :many
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses
@@ -267,8 +69,8 @@ LIMIT ? OFFSET ?
 `
 
 type ListCoursesParams struct {
-	Limit  int32
-	Offset int32
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
 }
 
 func (q *Queries) ListCourses(ctx context.Context, arg ListCoursesParams) ([]Course, error) {
@@ -313,7 +115,7 @@ WHERE course_pid = ?
 ORDER BY term DESC, crn ASC
 `
 
-func (q *Queries) ListSectionsByCourse(ctx context.Context, coursePid sql.NullString) ([]Section, error) {
+func (q *Queries) ListSectionsByCourse(ctx context.Context, coursePid *string) ([]Section, error) {
 	rows, err := q.db.QueryContext(ctx, listSectionsByCourse, coursePid)
 	if err != nil {
 		return nil, err
@@ -363,15 +165,20 @@ func (q *Queries) ListSectionsByCourse(ctx context.Context, coursePid sql.NullSt
 	return items, nil
 }
 
-const listSectionsByTerm = `-- name: ListSectionsByTerm :many
+const listSectionsByCourseAndTerm = `-- name: ListSectionsByCourseAndTerm :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE term = ?
+WHERE course_pid = ? AND term = ?
 ORDER BY crn ASC
 `
 
-func (q *Queries) ListSectionsByTerm(ctx context.Context, term string) ([]Section, error) {
-	rows, err := q.db.QueryContext(ctx, listSectionsByTerm, term)
+type ListSectionsByCourseAndTermParams struct {
+	CoursePid *string `json:"coursePid"`
+	Term      string  `json:"term"`
+}
+
+func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSectionsByCourseAndTermParams) ([]Section, error) {
+	rows, err := q.db.QueryContext(ctx, listSectionsByCourseAndTerm, arg.CoursePid, arg.Term)
 	if err != nil {
 		return nil, err
 	}
@@ -420,72 +227,101 @@ func (q *Queries) ListSectionsByTerm(ctx context.Context, term string) ([]Sectio
 	return items, nil
 }
 
-const updateCourse = `-- name: UpdateCourse :exec
-UPDATE courses
-SET title = ?, subject_code = ?, description = ?, credits = ?, hours_catalog_text = ?, notes = ?, pre_and_corequisites = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+const upsertCourse = `-- name: UpsertCourse :exec
+INSERT INTO courses (title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(pid) DO UPDATE SET
+    title = excluded.title,
+    subject_code = excluded.subject_code,
+    description = excluded.description,
+    credits = excluded.credits,
+    hours_catalog_text = excluded.hours_catalog_text,
+    notes = excluded.notes,
+    pre_and_corequisites = excluded.pre_and_corequisites,
+    updated_at = CURRENT_TIMESTAMP
 `
 
-type UpdateCourseParams struct {
-	Title              string
-	SubjectCode        string
-	Description        string
-	Credits            string
-	HoursCatalogText   string
-	Notes              string
-	PreAndCorequisites string
-	ID                 int32
+type UpsertCourseParams struct {
+	Title              string `json:"title"`
+	Pid                string `json:"pid"`
+	SubjectCode        string `json:"subjectCode"`
+	Description        string `json:"description"`
+	Credits            string `json:"credits"`
+	HoursCatalogText   string `json:"hoursCatalogText"`
+	Notes              string `json:"notes"`
+	PreAndCorequisites string `json:"preAndCorequisites"`
 }
 
-func (q *Queries) UpdateCourse(ctx context.Context, arg UpdateCourseParams) error {
-	_, err := q.db.ExecContext(ctx, updateCourse,
+func (q *Queries) UpsertCourse(ctx context.Context, arg UpsertCourseParams) error {
+	_, err := q.db.ExecContext(ctx, upsertCourse,
 		arg.Title,
+		arg.Pid,
 		arg.SubjectCode,
 		arg.Description,
 		arg.Credits,
 		arg.HoursCatalogText,
 		arg.Notes,
 		arg.PreAndCorequisites,
-		arg.ID,
 	)
 	return err
 }
 
-const updateSection = `-- name: UpdateSection :exec
-UPDATE sections
-SET term = ?, crn = ?, course_pid = ?, subject = ?, course_number = ?, course_name = ?, section = ?, schedule_type = ?, instructional_method = ?, frequency = ?, time = ?, days = ?, location = ?, date_range = ?, instructor = ?, units = ?, additional_information = ?, enrollment_actual = ?, enrollment_maximum = ?, enrollment_seats_available = ?, waitlist_capacity = ?, waitlist_actual = ?, waitlist_seats_available = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+const upsertSection = `-- name: UpsertSection :exec
+INSERT INTO sections (term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(term, crn) DO UPDATE SET
+    course_pid = excluded.course_pid,
+    subject = excluded.subject,
+    course_number = excluded.course_number,
+    course_name = excluded.course_name,
+    section = excluded.section,
+    schedule_type = excluded.schedule_type,
+    instructional_method = excluded.instructional_method,
+    frequency = excluded.frequency,
+    time = excluded.time,
+    days = excluded.days,
+    location = excluded.location,
+    date_range = excluded.date_range,
+    instructor = excluded.instructor,
+    units = excluded.units,
+    additional_information = excluded.additional_information,
+    enrollment_actual = excluded.enrollment_actual,
+    enrollment_maximum = excluded.enrollment_maximum,
+    enrollment_seats_available = excluded.enrollment_seats_available,
+    waitlist_capacity = excluded.waitlist_capacity,
+    waitlist_actual = excluded.waitlist_actual,
+    waitlist_seats_available = excluded.waitlist_seats_available,
+    updated_at = CURRENT_TIMESTAMP
 `
 
-type UpdateSectionParams struct {
-	Term                     string
-	Crn                      string
-	CoursePid                sql.NullString
-	Subject                  string
-	CourseNumber             string
-	CourseName               string
-	Section                  string
-	ScheduleType             string
-	InstructionalMethod      string
-	Frequency                string
-	Time                     string
-	Days                     string
-	Location                 string
-	DateRange                string
-	Instructor               string
-	Units                    string
-	AdditionalInformation    string
-	EnrollmentActual         int32
-	EnrollmentMaximum        int32
-	EnrollmentSeatsAvailable int32
-	WaitlistCapacity         int32
-	WaitlistActual           int32
-	WaitlistSeatsAvailable   int32
-	ID                       int32
+type UpsertSectionParams struct {
+	Term                     string  `json:"term"`
+	Crn                      string  `json:"crn"`
+	CoursePid                *string `json:"coursePid"`
+	Subject                  string  `json:"subject"`
+	CourseNumber             string  `json:"courseNumber"`
+	CourseName               string  `json:"courseName"`
+	Section                  string  `json:"section"`
+	ScheduleType             string  `json:"scheduleType"`
+	InstructionalMethod      string  `json:"instructionalMethod"`
+	Frequency                string  `json:"frequency"`
+	Time                     string  `json:"time"`
+	Days                     string  `json:"days"`
+	Location                 string  `json:"location"`
+	DateRange                string  `json:"dateRange"`
+	Instructor               string  `json:"instructor"`
+	Units                    string  `json:"units"`
+	AdditionalInformation    string  `json:"additionalInformation"`
+	EnrollmentActual         int64   `json:"enrollmentActual"`
+	EnrollmentMaximum        int64   `json:"enrollmentMaximum"`
+	EnrollmentSeatsAvailable int64   `json:"enrollmentSeatsAvailable"`
+	WaitlistCapacity         int64   `json:"waitlistCapacity"`
+	WaitlistActual           int64   `json:"waitlistActual"`
+	WaitlistSeatsAvailable   int64   `json:"waitlistSeatsAvailable"`
 }
 
-func (q *Queries) UpdateSection(ctx context.Context, arg UpdateSectionParams) error {
-	_, err := q.db.ExecContext(ctx, updateSection,
+func (q *Queries) UpsertSection(ctx context.Context, arg UpsertSectionParams) error {
+	_, err := q.db.ExecContext(ctx, upsertSection,
 		arg.Term,
 		arg.Crn,
 		arg.CoursePid,
@@ -509,7 +345,6 @@ func (q *Queries) UpdateSection(ctx context.Context, arg UpdateSectionParams) er
 		arg.WaitlistCapacity,
 		arg.WaitlistActual,
 		arg.WaitlistSeatsAvailable,
-		arg.ID,
 	)
 	return err
 }

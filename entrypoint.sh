@@ -12,6 +12,10 @@ mkdir -p "$DB_DIR"
 echo "Running migrations..."
 goose -dir /migrations sqlite3 "$DB_URL" up
 
+# Seed database
+echo "Seeding database..."
+/app -seed
+
 # Start server in background
 /app &
 

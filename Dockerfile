@@ -18,7 +18,15 @@ RUN CGO_ENABLED=1 go build -o /app main.go
 # Install Goose
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
-# Stage 2: Final Image (Caddy + Go)
+# Stage 2: Build React Frontend
+FROM node:20-alpine as node_builder
+WORKDIR /client
+COPY client/package*.json ./
+RUN npm install
+COPY client/ .
+RUN npm run build
+
+# Stage 3: Final Image (Caddy + Go)
 FROM caddy:2.7-alpine
 
 # Install bash for the entrypoint script
@@ -28,7 +36,7 @@ RUN apk add --no-cache bash
 COPY Caddyfile /etc/caddy/Caddyfile
 
 # Copy Frontend Build (React/Vite dist)
-COPY client/dist /usr/share/caddy
+COPY --from=node_builder /client/dist /usr/share/caddy
 
 # Copy Binaries from Builder
 COPY --from=builder /go/bin/goose /usr/local/bin/goose

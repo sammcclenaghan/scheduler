@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import { CalendarEvent } from './calendar-types'
+import type { CalendarEvent } from './calendar-types'
 
 interface CalendarContextType {
   events: CalendarEvent[]

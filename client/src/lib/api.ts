@@ -63,3 +63,4 @@ export const sectionsApi = {
     fetchJson<Section[]>(`${API_BASE}/sections/${pid}/${term}`),
 };
 
+

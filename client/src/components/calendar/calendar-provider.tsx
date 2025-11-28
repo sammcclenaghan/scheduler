@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CalendarContext } from './calendar-context'
-import { CalendarEvent } from './calendar-types'
+import type { CalendarEvent } from './calendar-types'
 
 interface CalendarProviderProps {
   events: CalendarEvent[]

@@ -1,4 +1,4 @@
-import { CalendarEvent as CalendarEventType } from "./calendar-types";
+import type { CalendarEvent } from "./calendar-types";
 import { useCalendarContext } from "./calendar-context";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -13,9 +13,9 @@ interface EventPosition {
 }
 
 function getOverlappingEvents(
-  currentEvent: CalendarEventType,
-  events: CalendarEventType[],
-): CalendarEventType[] {
+  currentEvent: CalendarEvent,
+  events: CalendarEvent[],
+): CalendarEvent[] {
   return events.filter((event) => {
     if (event.id === currentEvent.id) return false;
     return (
@@ -27,8 +27,8 @@ function getOverlappingEvents(
 }
 
 function calculateEventPosition(
-  event: CalendarEventType,
-  allEvents: CalendarEventType[],
+  event: CalendarEvent,
+  allEvents: CalendarEvent[],
 ): EventPosition {
   const overlappingEvents = getOverlappingEvents(event, allEvents);
   const group = [event, ...overlappingEvents].sort(
@@ -63,7 +63,7 @@ export default function CalendarEvent({
   event,
   className,
 }: {
-  event: CalendarEventType;
+  event: CalendarEvent;
   className?: string;
 }) {
   const { events, setSelectedEvent, setManageEventDialogOpen, date } =

@@ -1,4 +1,4 @@
-import { Section } from '@/api/go-api'
+import type { Section } from '@/lib/types'
 
 export interface CalendarEvent {
   id: string

@@ -54,3 +54,4 @@ export interface Section {
   waitlistSeatsAvailable: number;
 }
 
+

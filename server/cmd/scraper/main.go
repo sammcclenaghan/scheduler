@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,15 +17,18 @@ import (
 	"github.com/sammcclenaghan/scheduler/internal/scraper"
 )
 
+var courseIDRe = regexp.MustCompile(`^([A-Z]+)(\d+[A-Z]?)$`)
+
 func main() {
-	command := flag.String("cmd", "help", "Command: fetch-course, fetch-section, help")
+	command := flag.String("cmd", "help", "Command: fetch-course, fetch-section, bulk-scrape, help")
 	pid := flag.String("pid", "", "Course PID (for fetch-course)")
 	subject := flag.String("subject", "", "Course subject code (for fetch-section)")
 	courseNumber := flag.String("number", "", "Course number (for fetch-section)")
-	term := flag.String("term", "", "Term code (for fetch-section)")
+	term := flag.String("term", "", "Term code (for fetch-section and bulk-scrape)")
 	catalogID := flag.String("catalog", "", "Catalog ID (optional)")
-	coursesJSON := flag.String("courses", "", "Path to courses.json for indexing (optional)")
+	coursesJSON := flag.String("courses", "", "Path to courses.json for indexing (required for bulk-scrape)")
 	dbPath := flag.String("db", "", "Path to SQLite database (optional, if provided data will be saved)")
+	outDir := flag.String("out", "", "Output directory for bulk-scrape (default: ./data)")
 	flag.Parse()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -60,6 +64,19 @@ func main() {
 			log.Fatal("Error: --subject, --number, and --term are required for fetch-section")
 		}
 		fetchSection(ctx, s, q, *subject, *courseNumber, *term)
+
+	case "bulk-scrape":
+		if *coursesJSON == "" {
+			log.Fatal("Error: --courses is required for bulk-scrape")
+		}
+		if *term == "" {
+			log.Fatal("Error: --term is required for bulk-scrape")
+		}
+		output := *outDir
+		if output == "" {
+			output = "./data"
+		}
+		bulkScrape(*coursesJSON, *term, output)
 
 	case "help", "":
 		printHelp()
@@ -101,6 +118,120 @@ func fetchCourse(ctx context.Context, s *scraper.Scraper, q *db.Queries, pid str
 	}
 
 	fmt.Println(string(data))
+}
+
+type courseEntry struct {
+	CourseID string `json:"courseID"`
+	PID      string `json:"pid"`
+	Title    string `json:"title"`
+}
+
+func bulkScrape(coursesJSONPath, term, outDir string) {
+	f, err := os.Open(coursesJSONPath)
+	if err != nil {
+		log.Fatalf("Failed to open courses.json: %v", err)
+	}
+	defer f.Close()
+
+	var courses []courseEntry
+	if err := json.NewDecoder(f).Decode(&courses); err != nil {
+		log.Fatalf("Failed to parse courses.json: %v", err)
+	}
+
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		log.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	s, err := scraper.New("", "")
+	if err != nil {
+		log.Fatalf("Failed to create scraper: %v", err)
+	}
+
+	var allCourses []scraper.CourseInfo
+	var allSections []scraper.SectionInfo
+	var courseErrors []string
+	var sectionErrors []string
+
+	log.Printf("Starting bulk scrape of %d courses for term %s", len(courses), term)
+
+	for i, c := range courses {
+		log.Printf("[%d/%d] Processing %s (%s)", i+1, len(courses), c.CourseID, c.PID)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		course, err := s.FetchCourseInfo(ctx, c.PID)
+		cancel()
+
+		if err != nil {
+			log.Printf("  ERROR fetching course info: %v", err)
+			courseErrors = append(courseErrors, fmt.Sprintf("%s: %v", c.CourseID, err))
+		} else {
+			allCourses = append(allCourses, course)
+			log.Printf("  ✓ Course info fetched")
+		}
+
+		match := courseIDRe.FindStringSubmatch(strings.ToUpper(c.CourseID))
+		if match == nil {
+			log.Printf("  SKIP sections: couldn't parse courseID %s", c.CourseID)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		subject, number := match[1], match[2]
+
+		ctx2, cancel2 := context.WithTimeout(context.Background(), 30*time.Second)
+		sections, err := s.FetchSectionInfo(ctx2, subject, number, term)
+		cancel2()
+
+		if err != nil {
+			if !strings.Contains(err.Error(), "no sections found") {
+				log.Printf("  ERROR fetching sections: %v", err)
+				sectionErrors = append(sectionErrors, fmt.Sprintf("%s: %v", c.CourseID, err))
+			} else {
+				log.Printf("  No sections for term %s", term)
+			}
+		} else {
+			allSections = append(allSections, sections...)
+			log.Printf("  ✓ %d sections fetched", len(sections))
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	coursesOutPath := fmt.Sprintf("%s/courses-scraped.json", outDir)
+	if err := writeJSON(coursesOutPath, allCourses); err != nil {
+		log.Fatalf("Failed to write courses: %v", err)
+	}
+	log.Printf("Wrote %d courses to %s", len(allCourses), coursesOutPath)
+
+	sectionsOutPath := fmt.Sprintf("%s/sections-%s.json", outDir, term)
+	if err := writeJSON(sectionsOutPath, allSections); err != nil {
+		log.Fatalf("Failed to write sections: %v", err)
+	}
+	log.Printf("Wrote %d sections to %s", len(allSections), sectionsOutPath)
+
+	log.Printf("\n=== Summary ===")
+	log.Printf("Courses: %d success, %d errors", len(allCourses), len(courseErrors))
+	log.Printf("Sections: %d success, %d errors", len(allSections), len(sectionErrors))
+
+	if len(courseErrors) > 0 || len(sectionErrors) > 0 {
+		errorsPath := fmt.Sprintf("%s/errors-%s.json", outDir, term)
+		writeJSON(errorsPath, map[string][]string{
+			"course_errors":  courseErrors,
+			"section_errors": sectionErrors,
+		})
+		log.Printf("Errors written to %s", errorsPath)
+	}
+}
+
+func writeJSON(path string, data any) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(data)
 }
 
 func fetchSection(ctx context.Context, s *scraper.Scraper, q *db.Queries, subject, courseNumber, term string) {
@@ -166,6 +297,7 @@ USAGE:
 COMMANDS:
   fetch-course    Fetch course information by PID
   fetch-section   Fetch section information by subject, number, and term
+  bulk-scrape     Scrape all courses and sections from courses.json
   help            Show this help message (default)
 
 OPTIONS:
@@ -182,16 +314,19 @@ OPTIONS:
     	Course number (required for fetch-section, e.g., 111)
 
   -term string
-    	Term code (required for fetch-section, e.g., 202409)
+    	Term code (required for fetch-section and bulk-scrape, e.g., 202409)
 
   -catalog string
     	Catalog ID (optional, uses default if not provided)
 
   -courses string
-    	Path to courses.json for indexing (optional)
+    	Path to courses.json (required for bulk-scrape)
 
   -db string
     	Path to SQLite database (optional, if provided data will be saved)
+
+  -out string
+    	Output directory for bulk-scrape (default: ./data)
 
 EXAMPLES:
   # Fetch course info
@@ -205,5 +340,11 @@ EXAMPLES:
 
   # Fetch and save to DB
   go run ./server/cmd/scraper -cmd=fetch-section -subject=CSC -number=111 -term=202409 -db=./server/scheduler.db
+
+  # Bulk scrape all courses and sections for a term
+  go run ./server/cmd/scraper -cmd=bulk-scrape -courses=./courses.json -term=202409
+
+  # Bulk scrape with custom output directory
+  go run ./server/cmd/scraper -cmd=bulk-scrape -courses=./courses.json -term=202409 -out=./scraped-data
 `)
 }

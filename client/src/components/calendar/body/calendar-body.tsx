@@ -1,6 +1,6 @@
 import { useCalendarContext } from "../calendar-context";
 import CalendarEvent from "../calendar-event";
-import { format, startOfWeek, isToday, addDays, startOfDay } from "date-fns";
+import { format, startOfWeek, addDays, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export default function CalendarBody() {
@@ -45,7 +45,7 @@ function WeekView() {
       {/* Time slots */}
       <div
         className="grid"
-        style={{ gridTemplateRows: 'repeat(12, 1fr)', height: '100%' }}
+        style={{ gridTemplateRows: "repeat(12, 1fr)", height: "100%" }}
       >
         {timeSlots.map((timeLabel, timeIndex) => {
           const hour = 8 + timeIndex;

@@ -5,6 +5,11 @@
     "title": "Introduction to the Arts of Canada"
   },
   {
+    "courseID": "CSC230",
+    "pid": "HJeY5kOpXN",
+    "title": "Introduction to Computer Architecture"
+  },
+  {
     "courseID": "ADMN200",
     "pid": "SJ822w6XV",
     "title": "International Community Development Through Capacity Building"
@@ -2852,11 +2857,7 @@
     "pid": "HytcJuaQV",
     "title": "Algorithms and Data Structures II"
   },
-  {
-    "courseID": "CSC230",
-    "pid": "HJeY5kOpXN",
-    "title": "Introduction to Computer Architecture"
-  },
+
   {
     "courseID": "CSC299",
     "pid": "rk29yO6XE",

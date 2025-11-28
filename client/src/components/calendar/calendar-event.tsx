@@ -66,7 +66,7 @@ export default function CalendarEvent({
   event: CalendarEvent;
   className?: string;
 }) {
-  const { events, setSelectedEvent, setManageEventDialogOpen, date } =
+  const { events, setSelectedEvent, setManageEventDialogOpen } =
     useCalendarContext();
   const style = calculateEventPosition(event, events);
 
@@ -126,12 +126,9 @@ export default function CalendarEvent({
           }}
           layoutId={`event-${animationKey}-day`}
         >
-          <motion.div
-            className={cn("flex flex-col w-full")}
-            layout="position"
-          >
+          <motion.div className={cn("flex flex-col w-full")} layout="position">
             <p className="font-bold truncate">
-              {event.section.subject} {event.section.course_number}
+              {event.section.subject} {event.section.courseNumber}
             </p>
             <div className="text-sm">
               <div className="flex items-center gap-1">

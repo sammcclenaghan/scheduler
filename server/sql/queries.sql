@@ -71,7 +71,7 @@ ON CONFLICT(term, crn) DO UPDATE SET
 -- name: SearchCoursesBySubjectCode :many
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses
-WHERE subject_code LIKE ? || '%'
+WHERE subject_code LIKE ? || '%' OR REPLACE(subject_code, ' ', '') LIKE REPLACE(?, ' ', '') || '%'
 ORDER BY subject_code
 LIMIT 50;
 

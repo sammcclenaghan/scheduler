@@ -18,6 +18,18 @@ export const courseQueries = {
     }),
 
   /**
+   * Get a single course by subject code.
+   * @example
+   * const { data } = useQuery(courseQueries.bySubjectCode("CSC115"));
+   */
+  bySubjectCode: (subjectCode: string) =>
+    queryOptions({
+      queryKey: ["courses", "code", subjectCode],
+      queryFn: () => coursesApi.getCourseBySubjectCode(subjectCode),
+      enabled: subjectCode.length > 0,
+    }),
+
+  /**
    * Search courses by subject code prefix.
    * @example
    * const { data } = useQuery(courseQueries.search("CSC1"));

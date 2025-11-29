@@ -424,7 +424,7 @@ func parseCredits(v any) string {
 
 func parsePrereqs(v any) string {
 	if s, ok := v.(string); ok {
-		if text := htmlToText(s); text != "" {
+		if text := htmlToStructuredText(s); text != "" {
 			return text
 		}
 		return stripTags(s)
@@ -434,6 +434,86 @@ func parsePrereqs(v any) string {
 		return strings.TrimSpace(string(b))
 	}
 	return ""
+}
+
+// htmlToStructuredText converts HTML to text while preserving structure.
+// Block elements like <br>, <li>, <p>, <div> create new lines.
+// List items get a bullet point prefix.
+func htmlToStructuredText(s string) string {
+	if s = strings.TrimSpace(s); s == "" {
+		return ""
+	}
+	n, err := html.Parse(strings.NewReader(s))
+	if err != nil {
+		return stripTags(s)
+	}
+
+	var b strings.Builder
+	var walk func(*html.Node, bool)
+	walk = func(node *html.Node, inList bool) {
+		if node.Type == html.ElementNode {
+			switch node.Data {
+			case "br":
+				b.WriteString("\n")
+			case "p", "div":
+				if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n") {
+					b.WriteString("\n")
+				}
+			case "li":
+				if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n") {
+					b.WriteString("\n")
+				}
+				b.WriteString("• ")
+				inList = true
+			case "ul", "ol":
+				if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n") {
+					b.WriteString("\n")
+				}
+			}
+		}
+
+		if node.Type == html.TextNode {
+			text := strings.TrimSpace(node.Data)
+			if text != "" {
+				// Add space before text if needed (not at start of line)
+				if b.Len() > 0 {
+					last := b.String()[b.Len()-1]
+					if last != '\n' && last != ' ' && last != '•' {
+						b.WriteByte(' ')
+					}
+				}
+				b.WriteString(text)
+			}
+		}
+
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			walk(c, inList)
+		}
+
+		// Add newline after certain block elements
+		if node.Type == html.ElementNode {
+			switch node.Data {
+			case "p", "div", "li":
+				// Ensure we end with a newline after block elements
+				if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n") {
+					b.WriteString("\n")
+				}
+			}
+		}
+	}
+
+	walk(n, false)
+
+	// Clean up: remove extra whitespace on lines, collapse multiple newlines
+	lines := strings.Split(b.String(), "\n")
+	var result []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			result = append(result, line)
+		}
+	}
+	return strings.Join(result, "\n")
 }
 
 func htmlToText(s string) string {

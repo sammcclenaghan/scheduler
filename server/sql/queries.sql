@@ -75,3 +75,9 @@ WHERE subject_code LIKE ? || '%' OR REPLACE(subject_code, ' ', '') LIKE REPLACE(
 ORDER BY subject_code
 LIMIT 50;
 
+-- name: GetCourseBySubjectCode :one
+SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
+FROM courses
+WHERE subject_code = ? OR REPLACE(subject_code, ' ', '') = REPLACE(?, ' ', '')
+LIMIT 1;
+

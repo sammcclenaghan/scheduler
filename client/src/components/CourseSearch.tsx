@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { courseQueries } from "../lib/queries";
 
 export function CourseSearch() {
@@ -56,10 +57,11 @@ export function CourseSearch() {
             </p>
             <div className="space-y-2">
               {courses.map((course) => (
-                <button
+                <Link
                   key={course.pid}
-                  type="button"
-                  className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700"
+                  to="/courses/$subjectCode"
+                  params={{ subjectCode: String(course.subjectCode) }}
+                  className="block w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700"
                 >
                   <div className="font-medium text-cyan-400 text-sm">
                     {course.subjectCode}
@@ -67,7 +69,7 @@ export function CourseSearch() {
                   <div className="text-gray-300 text-xs mt-1 line-clamp-2">
                     {course.title}
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           </div>

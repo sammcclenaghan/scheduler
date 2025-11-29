@@ -14,7 +14,7 @@ goose -dir /migrations sqlite3 "$DB_URL" up
 
 # Seed database
 echo "Seeding database..."
-/seeder -db="$DB_URL" -data=/data
+/seeder -db="$DB_URL" -data=/seed-data
 
 # Start server in background
 /app &

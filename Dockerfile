@@ -47,7 +47,7 @@ COPY --from=builder /seeder /seeder
 # Copy Migrations and Script
 COPY server/db/migrations /migrations
 COPY entrypoint.sh /entrypoint.sh
-COPY data /data
+COPY data /seed-data
 RUN chmod +x /entrypoint.sh
 
 # Environment Defaults

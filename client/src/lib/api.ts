@@ -45,11 +45,15 @@ export const coursesApi = {
   /**
    * Search courses by subject code prefix.
    * @param query - The search query (e.g., "CSC1")
+   * @param term - Optional term filter (e.g., "202601")
    */
-  search: (query: string): Promise<Course[]> =>
-    fetchJson<Course[]>(
-      `${API_BASE}/search/courses?q=${encodeURIComponent(query)}`
-    ),
+  search: (query: string, term?: string): Promise<Course[]> => {
+    const params = new URLSearchParams({ q: query });
+    if (term) {
+      params.set("term", term);
+    }
+    return fetchJson<Course[]>(`${API_BASE}/search/courses?${params}`);
+  },
 };
 
 /**

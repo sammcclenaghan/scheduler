@@ -3,15 +3,22 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { courseQueries } from "../lib/queries";
 
+const TERMS = [
+  { code: "202509", label: "Fall 2025" },
+  { code: "202601", label: "Spring 2026" },
+  { code: "202605", label: "Summer 2026" },
+];
+
 export function CourseSearch() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTerm, setSelectedTerm] = useState("202509");
 
   const {
     data: courses,
     error,
     isLoading,
-  } = useQuery(courseQueries.search(searchTerm));
+  } = useQuery(courseQueries.search(searchTerm, selectedTerm));
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -25,6 +32,23 @@ export function CourseSearch() {
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-gray-700">
         <h2 className="text-lg font-bold mb-3">Course Search</h2>
+
+        <div className="flex gap-2 mb-3">
+          {TERMS.map((term) => (
+            <button
+              key={term.code}
+              type="button"
+              onClick={() => setSelectedTerm(term.code)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                selectedTerm === term.code
+                  ? "bg-cyan-600 text-white"
+                  : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
+              }`}
+            >
+              {term.label}
+            </button>
+          ))}
+        </div>
 
         <input
           type="text"

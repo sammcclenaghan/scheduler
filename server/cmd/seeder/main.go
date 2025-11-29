@@ -165,7 +165,8 @@ func buildPIDIndex(ctx context.Context, q *db.Queries) map[string]string {
 	}
 
 	for _, c := range courses {
-		key := strings.ToUpper(strings.TrimSpace(c.SubjectCode))
+		// Normalize: remove spaces and uppercase (e.g., "CSC 230" -> "CSC230")
+		key := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(c.SubjectCode), " ", ""))
 		index[key] = c.Pid
 	}
 
@@ -188,7 +189,8 @@ func seedSections(ctx context.Context, q *db.Queries, path string, pidIndex map[
 	log.Printf("Seeding %d sections from %s", len(sections), filepath.Base(path))
 
 	for _, s := range sections {
-		key := strings.ToUpper(fmt.Sprintf("%s %s", s.Subject, s.CourseNumber))
+		// Normalize: no space, uppercase (e.g., "CSC" + "230" -> "CSC230")
+		key := strings.ToUpper(fmt.Sprintf("%s%s", s.Subject, s.CourseNumber))
 		pid := pidIndex[key]
 		var pidPtr *string
 		if pid != "" {

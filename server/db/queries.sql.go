@@ -306,6 +306,57 @@ func (q *Queries) SearchCoursesBySubjectCode(ctx context.Context, arg SearchCour
 	return items, nil
 }
 
+const searchCoursesBySubjectCodeAndTerm = `-- name: SearchCoursesBySubjectCodeAndTerm :many
+SELECT DISTINCT c.id, c.created_at, c.updated_at, c.title, c.pid, c.subject_code, c.description, c.credits, c.hours_catalog_text, c.notes, c.pre_and_corequisites
+FROM courses c
+INNER JOIN sections s ON (s.subject || s.course_number) = REPLACE(c.subject_code, ' ', '')
+WHERE (c.subject_code LIKE ? || '%' OR REPLACE(c.subject_code, ' ', '') LIKE REPLACE(?, ' ', '') || '%')
+  AND s.term = ?
+ORDER BY c.subject_code
+LIMIT 50
+`
+
+type SearchCoursesBySubjectCodeAndTermParams struct {
+	Column1 *string `json:"column1"`
+	REPLACE string  `json:"REPLACE"`
+	Term    string  `json:"term"`
+}
+
+func (q *Queries) SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg SearchCoursesBySubjectCodeAndTermParams) ([]Course, error) {
+	rows, err := q.db.QueryContext(ctx, searchCoursesBySubjectCodeAndTerm, arg.Column1, arg.REPLACE, arg.Term)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Course
+	for rows.Next() {
+		var i Course
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Pid,
+			&i.SubjectCode,
+			&i.Description,
+			&i.Credits,
+			&i.HoursCatalogText,
+			&i.Notes,
+			&i.PreAndCorequisites,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertCourse = `-- name: UpsertCourse :exec
 INSERT INTO courses (title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)

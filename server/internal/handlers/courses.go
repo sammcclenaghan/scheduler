@@ -24,6 +24,7 @@ type CourseBySubjectCodeGetter interface {
 
 type CourseSearcher interface {
 	SearchCoursesBySubjectCode(ctx context.Context, arg db.SearchCoursesBySubjectCodeParams) ([]db.Course, error)
+	SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg db.SearchCoursesBySubjectCodeAndTermParams) ([]db.Course, error)
 }
 
 func GetCourse(store CourseGetter) http.HandlerFunc {
@@ -68,10 +69,26 @@ func SearchCourses(store CourseSearcher) http.HandlerFunc {
 			return
 		}
 
-		courses, err := store.SearchCoursesBySubjectCode(r.Context(), db.SearchCoursesBySubjectCodeParams{
-			Column1: &query,
-			REPLACE: query,
-		})
+		term := r.URL.Query().Get("term")
+
+		var courses []db.Course
+		var err error
+
+		if term != "" {
+			// Filter courses by term (only courses with sections in the given term)
+			courses, err = store.SearchCoursesBySubjectCodeAndTerm(r.Context(), db.SearchCoursesBySubjectCodeAndTermParams{
+				Column1: &query,
+				REPLACE: query,
+				Term:    term,
+			})
+		} else {
+			// Return all matching courses regardless of term
+			courses, err = store.SearchCoursesBySubjectCode(r.Context(), db.SearchCoursesBySubjectCodeParams{
+				Column1: &query,
+				REPLACE: query,
+			})
+		}
+
 		if err != nil {
 			http.Error(w, "failed to search courses", http.StatusInternalServerError)
 			return

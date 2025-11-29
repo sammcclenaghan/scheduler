@@ -75,6 +75,15 @@ WHERE subject_code LIKE ? || '%' OR REPLACE(subject_code, ' ', '') LIKE REPLACE(
 ORDER BY subject_code
 LIMIT 50;
 
+-- name: SearchCoursesBySubjectCodeAndTerm :many
+SELECT DISTINCT c.id, c.created_at, c.updated_at, c.title, c.pid, c.subject_code, c.description, c.credits, c.hours_catalog_text, c.notes, c.pre_and_corequisites
+FROM courses c
+INNER JOIN sections s ON (s.subject || s.course_number) = REPLACE(c.subject_code, ' ', '')
+WHERE (c.subject_code LIKE ? || '%' OR REPLACE(c.subject_code, ' ', '') LIKE REPLACE(?, ' ', '') || '%')
+  AND s.term = ?
+ORDER BY c.subject_code
+LIMIT 50;
+
 -- name: GetCourseBySubjectCode :one
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses

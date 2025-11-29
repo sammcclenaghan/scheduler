@@ -20,12 +20,12 @@ RUN CGO_ENABLED=1 go build -o /seeder ./cmd/seeder
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 # Stage 2: Build React Frontend
-FROM node:20-alpine as node_builder
+FROM oven/bun:1-alpine as node_builder
 WORKDIR /client
-COPY client/package*.json ./
-RUN npm install
+COPY client/package.json client/bun.lock* ./
+RUN bun install --frozen-lockfile
 COPY client/ .
-RUN npm run build
+RUN bun run build
 
 # Stage 3: Final Image (Caddy + Go)
 FROM caddy:2.7-alpine
@@ -47,7 +47,6 @@ COPY --from=builder /seeder /seeder
 # Copy Migrations and Script
 COPY server/db/migrations /migrations
 COPY entrypoint.sh /entrypoint.sh
-# Copy data to staging location (will be copied to /data at runtime)
 COPY data /seed-data
 RUN chmod +x /entrypoint.sh
 

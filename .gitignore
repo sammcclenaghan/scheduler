@@ -1,0 +1,32 @@
+data/scheduler.db
+
+# Dependencies
+node_modules/
+.pnpm-lock.yaml
+
+# Build artifacts
+dist/
+build/
+*.o
+*.a
+*.so
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

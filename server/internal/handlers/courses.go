@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -15,6 +16,15 @@ import (
 
 type CourseGetter interface {
 	GetCourse(ctx context.Context, id int64) (db.Course, error)
+}
+
+type CourseBySubjectCodeGetter interface {
+	GetCourseBySubjectCode(ctx context.Context, arg db.GetCourseBySubjectCodeParams) (db.Course, error)
+}
+
+type CourseSearcher interface {
+	SearchCoursesBySubjectCode(ctx context.Context, arg db.SearchCoursesBySubjectCodeParams) ([]db.Course, error)
+	SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg db.SearchCoursesBySubjectCodeAndTermParams) ([]db.Course, error)
 }
 
 func GetCourse(store CourseGetter) http.HandlerFunc {
@@ -45,6 +55,78 @@ func GetCourse(store CourseGetter) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(course); err != nil {
 			// If we fail to encode, there isn't much we can do besides return 500.
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func SearchCourses(store CourseSearcher) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			http.Error(w, "missing q parameter", http.StatusBadRequest)
+			return
+		}
+
+		term := r.URL.Query().Get("term")
+
+		var courses []db.Course
+		var err error
+
+		if term != "" {
+			// Filter courses by term (only courses with sections in the given term)
+			courses, err = store.SearchCoursesBySubjectCodeAndTerm(r.Context(), db.SearchCoursesBySubjectCodeAndTermParams{
+				Column1: &query,
+				REPLACE: query,
+				Term:    term,
+			})
+		} else {
+			// Return all matching courses regardless of term
+			courses, err = store.SearchCoursesBySubjectCode(r.Context(), db.SearchCoursesBySubjectCodeParams{
+				Column1: &query,
+				REPLACE: query,
+			})
+		}
+
+		if err != nil {
+			http.Error(w, "failed to search courses", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(courses); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func GetCourseBySubjectCode(store CourseBySubjectCodeGetter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		subjectCode := chi.URLParam(r, "subjectCode")
+		if subjectCode == "" {
+			http.Error(w, "missing subjectCode parameter", http.StatusBadRequest)
+			return
+		}
+
+		course, err := store.GetCourseBySubjectCode(r.Context(), db.GetCourseBySubjectCodeParams{
+			SubjectCode: subjectCode,
+			REPLACE:     subjectCode,
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "course not found", http.StatusNotFound)
+				return
+			}
+
+			http.Error(w, "failed to fetch course", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("course: %+v", course)
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(course); err != nil {
 			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 			return
 		}

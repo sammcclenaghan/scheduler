@@ -32,6 +32,28 @@ export const coursesApi = {
    */
   getCourse: (id: number): Promise<Course> =>
     fetchJson<Course>(`${API_BASE}/courses/${id}`),
+
+  /**
+   * Get a single course by subject code (e.g., "CSC115").
+   * @param subjectCode - The course subject code
+   */
+  getCourseBySubjectCode: (subjectCode: string): Promise<Course> =>
+    fetchJson<Course>(
+      `${API_BASE}/courses/code/${encodeURIComponent(subjectCode)}`
+    ),
+
+  /**
+   * Search courses by subject code prefix.
+   * @param query - The search query (e.g., "CSC1")
+   * @param term - Optional term filter (e.g., "202601")
+   */
+  search: (query: string, term?: string): Promise<Course[]> => {
+    const params = new URLSearchParams({ q: query });
+    if (term) {
+      params.set("term", term);
+    }
+    return fetchJson<Course[]>(`${API_BASE}/search/courses?${params}`);
+  },
 };
 
 /**
@@ -53,4 +75,6 @@ export const sectionsApi = {
   listByPidAndTerm: (pid: string, term: string): Promise<Section[]> =>
     fetchJson<Section[]>(`${API_BASE}/sections/${pid}/${term}`),
 };
+
+
 

@@ -1,22 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { courseQueries } from "../../lib/queries";
+import { PrerequisiteLinks } from "../../components/PrerequisiteLinks";
 
-export const Route = createFileRoute("/courses/$courseId")({
-  component: CourseDetail,
+export const Route = createFileRoute("/courses/$subjectCode")({
+  component: CourseBySubjectCode,
 });
 
-function CourseDetail() {
-  const { courseId } = Route.useParams();
-  const id = Number(courseId);
+function CourseBySubjectCode() {
+  const { subjectCode } = Route.useParams();
 
   const {
     data: course,
     isLoading,
     error,
-  } = useQuery(courseQueries.detail(id));
-
-  console.log(course);
+  } = useQuery(courseQueries.bySubjectCode(subjectCode));
 
   if (isLoading) {
     return (
@@ -30,7 +28,9 @@ function CourseDetail() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-lg text-red-500">
-          Error: {error.message}
+          {error.message.includes("404")
+            ? `Course "${subjectCode}" not found`
+            : `Error: ${error.message}`}
         </div>
       </div>
     );
@@ -44,7 +44,6 @@ function CourseDetail() {
     );
   }
 
-  // `course` is fully typed as Course here!
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -76,7 +75,9 @@ function CourseDetail() {
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
               Prerequisites & Corequisites
             </h2>
-            <p className="text-gray-600">{course.preAndCorequisites}</p>
+            <div className="text-gray-600">
+              <PrerequisiteLinks text={course.preAndCorequisites} />
+            </div>
           </div>
         )}
 
@@ -101,4 +102,3 @@ function CourseDetail() {
     </div>
   );
 }
-

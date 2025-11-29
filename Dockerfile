@@ -12,8 +12,9 @@ RUN go mod download
 # Copy server source
 COPY server/ .
 
-# Build Go App
+# Build Go App and Seeder
 RUN CGO_ENABLED=1 go build -o /app main.go
+RUN CGO_ENABLED=1 go build -o /seeder ./cmd/seeder
 
 # Install Goose
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -41,11 +42,12 @@ COPY --from=node_builder /client/dist /usr/share/caddy
 # Copy Binaries from Builder
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app /app
+COPY --from=builder /seeder /seeder
 
 # Copy Migrations and Script
 COPY server/db/migrations /migrations
 COPY entrypoint.sh /entrypoint.sh
-COPY courses.json /courses.json
+COPY data /data
 RUN chmod +x /entrypoint.sh
 
 # Environment Defaults

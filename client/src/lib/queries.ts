@@ -16,6 +16,31 @@ export const courseQueries = {
       queryKey: ["courses", id],
       queryFn: () => coursesApi.getCourse(id),
     }),
+
+  /**
+   * Get a single course by subject code.
+   * @example
+   * const { data } = useQuery(courseQueries.bySubjectCode("CSC115"));
+   */
+  bySubjectCode: (subjectCode: string) =>
+    queryOptions({
+      queryKey: ["courses", "code", subjectCode],
+      queryFn: () => coursesApi.getCourseBySubjectCode(subjectCode),
+      enabled: subjectCode.length > 0,
+    }),
+
+  /**
+   * Search courses by subject code prefix.
+   * @example
+   * const { data } = useQuery(courseQueries.search("CSC1"));
+   * const { data } = useQuery(courseQueries.search("CSC1", "202601"));
+   */
+  search: (query: string, term?: string) =>
+    queryOptions({
+      queryKey: ["courses", "search", query, term],
+      queryFn: () => coursesApi.search(query, term),
+      enabled: query.length > 0,
+    }),
 };
 
 /**
@@ -44,4 +69,6 @@ export const sectionQueries = {
       queryFn: () => sectionsApi.listByPidAndTerm(pid, term),
     }),
 };
+
+
 

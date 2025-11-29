@@ -61,6 +61,37 @@ func (q *Queries) GetCourseByPID(ctx context.Context, pid string) (Course, error
 	return i, err
 }
 
+const getCourseBySubjectCode = `-- name: GetCourseBySubjectCode :one
+SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
+FROM courses
+WHERE subject_code = ? OR REPLACE(subject_code, ' ', '') = REPLACE(?, ' ', '')
+LIMIT 1
+`
+
+type GetCourseBySubjectCodeParams struct {
+	SubjectCode string `json:"subjectCode"`
+	REPLACE     string `json:"REPLACE"`
+}
+
+func (q *Queries) GetCourseBySubjectCode(ctx context.Context, arg GetCourseBySubjectCodeParams) (Course, error) {
+	row := q.db.QueryRowContext(ctx, getCourseBySubjectCode, arg.SubjectCode, arg.REPLACE)
+	var i Course
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Title,
+		&i.Pid,
+		&i.SubjectCode,
+		&i.Description,
+		&i.Credits,
+		&i.HoursCatalogText,
+		&i.Notes,
+		&i.PreAndCorequisites,
+	)
+	return i, err
+}
+
 const listCourses = `-- name: ListCourses :many
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses
@@ -213,6 +244,105 @@ func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSecti
 			&i.WaitlistCapacity,
 			&i.WaitlistActual,
 			&i.WaitlistSeatsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchCoursesBySubjectCode = `-- name: SearchCoursesBySubjectCode :many
+SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
+FROM courses
+WHERE subject_code LIKE ? || '%' OR REPLACE(subject_code, ' ', '') LIKE REPLACE(?, ' ', '') || '%'
+ORDER BY subject_code
+LIMIT 50
+`
+
+type SearchCoursesBySubjectCodeParams struct {
+	Column1 *string `json:"column1"`
+	REPLACE string  `json:"REPLACE"`
+}
+
+func (q *Queries) SearchCoursesBySubjectCode(ctx context.Context, arg SearchCoursesBySubjectCodeParams) ([]Course, error) {
+	rows, err := q.db.QueryContext(ctx, searchCoursesBySubjectCode, arg.Column1, arg.REPLACE)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Course
+	for rows.Next() {
+		var i Course
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Pid,
+			&i.SubjectCode,
+			&i.Description,
+			&i.Credits,
+			&i.HoursCatalogText,
+			&i.Notes,
+			&i.PreAndCorequisites,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchCoursesBySubjectCodeAndTerm = `-- name: SearchCoursesBySubjectCodeAndTerm :many
+SELECT DISTINCT c.id, c.created_at, c.updated_at, c.title, c.pid, c.subject_code, c.description, c.credits, c.hours_catalog_text, c.notes, c.pre_and_corequisites
+FROM courses c
+INNER JOIN sections s ON (s.subject || s.course_number) = REPLACE(c.subject_code, ' ', '')
+WHERE (c.subject_code LIKE ? || '%' OR REPLACE(c.subject_code, ' ', '') LIKE REPLACE(?, ' ', '') || '%')
+  AND s.term = ?
+ORDER BY c.subject_code
+LIMIT 50
+`
+
+type SearchCoursesBySubjectCodeAndTermParams struct {
+	Column1 *string `json:"column1"`
+	REPLACE string  `json:"REPLACE"`
+	Term    string  `json:"term"`
+}
+
+func (q *Queries) SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg SearchCoursesBySubjectCodeAndTermParams) ([]Course, error) {
+	rows, err := q.db.QueryContext(ctx, searchCoursesBySubjectCodeAndTerm, arg.Column1, arg.REPLACE, arg.Term)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Course
+	for rows.Next() {
+		var i Course
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Pid,
+			&i.SubjectCode,
+			&i.Description,
+			&i.Credits,
+			&i.HoursCatalogText,
+			&i.Notes,
+			&i.PreAndCorequisites,
 		); err != nil {
 			return nil, err
 		}

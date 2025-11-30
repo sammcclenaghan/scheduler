@@ -85,9 +85,9 @@ export default function CalendarEvent({
       <AnimatePresence mode="wait">
         <motion.div
           className={cn(
-            "px-3 py-1.5 rounded-md truncate cursor-pointer transition-all duration-300",
+            "px-2 py-1 rounded-md cursor-pointer transition-all duration-300",
             "absolute shadow-sm ring-1 ring-black/10 dark:ring-white/10",
-            "border",
+            "border flex flex-col overflow-hidden",
             className,
           )}
           style={{
@@ -133,19 +133,19 @@ export default function CalendarEvent({
           }}
           layoutId={`event-${animationKey}-day`}
         >
-          <motion.div className={cn("flex flex-col w-full")} layout="position">
-            <p className="font-bold truncate">
-              {event.section.subject} {event.section.courseNumber}
-            </p>
-            <div className="text-sm">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
+          <motion.div className={cn("flex flex-col w-full h-full")} layout="position">
+            <div className="font-bold text-xs sm:text-sm leading-tight mb-0.5 truncate">
+              {event.section.subject} {event.section.courseNumber} {event.section.section}
+            </div>
+            <div className="text-[10px] sm:text-xs opacity-95 flex flex-col gap-0.5 min-h-0">
+              <div className="flex items-center gap-1 min-w-0">
+                <MapPin className="h-3 w-3 shrink-0" />
                 <span className="truncate">{event.section.location}</span>
               </div>
 
               {event.section.scheduleType === "Lecture" && (
-                <div className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
+                <div className="flex items-center gap-1 min-w-0">
+                  <Users className="h-3 w-3 shrink-0" />
                   <span className="truncate">{event.section.instructor}</span>
                 </div>
               )}

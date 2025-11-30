@@ -1,9 +1,9 @@
 import type { CalendarEvent } from "./calendar-types";
 import { useCalendarContext } from "./calendar-context";
-import { format, isSameDay } from "date-fns";
+import { isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion, MotionConfig, AnimatePresence } from "framer-motion";
-import { Clock, MapPin, Users } from "lucide-react";
+import { MapPin, Users, Globe } from "lucide-react";
 
 interface EventPosition {
   left: string;
@@ -132,19 +132,16 @@ export default function CalendarEvent({
             </p>
             <div className="text-sm">
               <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{format(event.start, "h:mm a")}</span>
-                <span className="mx-1">-</span>
-                <span>{format(event.end, "h:mm a")}</span>
-              </div>
-              <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 <span className="truncate">{event.section.location}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span className="truncate">{event.section.instructor}</span>
-              </div>
+
+              {event.section.scheduleType === "Lecture" && (
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span className="truncate">{event.section.instructor}</span>
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

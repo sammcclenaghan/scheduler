@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { courseQueries } from "../lib/queries";
+import type { CourseSearchResult } from "../lib/types";
 
 const TERMS = [
   { code: "202509", label: "Fall 2025" },
@@ -9,7 +9,11 @@ const TERMS = [
   { code: "202605", label: "Summer 2026" },
 ];
 
-export function CourseSearch() {
+interface CourseSearchProps {
+  onCourseSelect?: (result: CourseSearchResult, term: string) => void;
+}
+
+export function CourseSearch({ onCourseSelect }: CourseSearchProps) {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTerm, setSelectedTerm] = useState("202509");
@@ -80,20 +84,20 @@ export function CourseSearch() {
               Found {courses.length} courses
             </p>
             <div className="space-y-2">
-              {courses.map((course) => (
-                <Link
-                  key={course.pid}
-                  to="/courses/$subjectCode"
-                  params={{ subjectCode: String(course.subjectCode) }}
+              {courses.map((result) => (
+                <button
+                  type="button"
+                  key={result.course.pid}
+                  onClick={() => onCourseSelect?.(result, selectedTerm)}
                   className="block w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700"
                 >
                   <div className="font-medium text-cyan-400 text-sm">
-                    {course.subjectCode}
+                    {result.course.subjectCode}
                   </div>
                   <div className="text-gray-300 text-xs mt-1 line-clamp-2">
-                    {course.title}
+                    {result.course.title}
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           </div>

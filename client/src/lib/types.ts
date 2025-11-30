@@ -54,5 +54,13 @@ export interface Section {
   waitlistSeatsAvailable: number;
 }
 
+/**
+ * CourseSearchResult returned from /search/courses endpoint
+ * Contains a course and its default sections
+ */
+export interface CourseSearchResult {
+  course: Course;
+  defaultSections: Section[];
+}
 
 

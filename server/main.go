@@ -41,8 +41,7 @@ func (s *Server) MountHandlers() {
 	s.Router.Get("/api/healthcheck", handlers.Healthcheck())
 	s.Router.Get("/api/courses/code/{subjectCode}", handlers.GetCourseBySubjectCode(s.Queries))
 	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
-	s.Router.Get("/api/search/courses", handlers.SearchCourses(s.Queries))
-	s.Router.Get("/api/sections/{pid}", handlers.ListSectionsByPID(s.Queries))
+	s.Router.Get("/api/search/courses", handlers.SearchCourses(s.Queries, s.Queries))
 	s.Router.Get("/api/sections/{pid}/{term}", handlers.ListSectionsByPID(s.Queries))
 }
 

@@ -3,7 +3,7 @@ import { useCalendarContext } from "./calendar-context";
 import { isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion, MotionConfig, AnimatePresence } from "framer-motion";
-import { MapPin, Users, Globe } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
 
 interface EventPosition {
   left: string;
@@ -31,9 +31,16 @@ function calculateEventPosition(
   allEvents: CalendarEvent[],
 ): EventPosition {
   const overlappingEvents = getOverlappingEvents(event, allEvents);
-  const group = [event, ...overlappingEvents].sort(
-    (a, b) => a.start.getTime() - b.start.getTime(),
-  );
+  const group = [event, ...overlappingEvents].sort((a, b) => {
+    const startDiff = a.start.getTime() - b.start.getTime();
+    if (startDiff !== 0) return startDiff;
+    const durationDiff =
+      b.end.getTime() -
+      b.start.getTime() -
+      (a.end.getTime() - a.start.getTime());
+    if (durationDiff !== 0) return durationDiff;
+    return a.id.localeCompare(b.id);
+  });
   const position = group.indexOf(event);
   const width = `${100 / (overlappingEvents.length + 1)}%`;
   const left = `${(position * 100) / (overlappingEvents.length + 1)}%`;

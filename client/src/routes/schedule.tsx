@@ -19,7 +19,23 @@ function Schedule() {
       "Sections:",
       result.defaultSections.map((s) => ({ time: s.time, days: s.days })),
     );
-    const newEvents = sectionsToEvents(result.defaultSections, date);
+
+    if (result.defaultSections.length === 0) return;
+
+    const subject = result.defaultSections[0].subject;
+    const courseNumber = result.defaultSections[0].courseNumber;
+    const courseId = `${subject} ${courseNumber}`;
+
+    const uniqueCourses = Array.from(
+      new Set(events.map((e) => `${e.section.subject} ${e.section.courseNumber}`)),
+    );
+
+    let colorIndex = uniqueCourses.indexOf(courseId);
+    if (colorIndex === -1) {
+      colorIndex = uniqueCourses.length;
+    }
+
+    const newEvents = sectionsToEvents(result.defaultSections, date, colorIndex);
     console.log("Events:", newEvents);
     setEvents((prev) => [...prev, ...newEvents]);
   };
@@ -29,8 +45,8 @@ function Schedule() {
       <aside className="w-80 bg-gray-900 text-white border-r border-gray-700 shrink-0 overflow-hidden">
         <CourseSearch onCourseSelect={handleCourseSelect} />
       </aside>
-      <main className="flex-1 p-6 overflow-hidden">
-        <div className="h-full bg-card text-card-foreground rounded-xl shadow-sm overflow-hidden border border-border">
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full bg-card text-card-foreground overflow-hidden">
           <Calendar
             events={events}
             setEvents={setEvents}

@@ -1,9 +1,9 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
 
-import Header from '../components/Header'
+import Header from "../components/Header";
 
 export const Route = createRootRoute({
   component: () => (
@@ -16,11 +16,11 @@ export const Route = createRootRoute({
       </div>
       <TanStackDevtools
         config={{
-          position: 'bottom-right',
+          position: "bottom-right",
         }}
         plugins={[
           {
-            name: 'Tanstack Router',
+            name: "Tanstack Router",
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
@@ -28,4 +28,4 @@ export const Route = createRootRoute({
       <ReactQueryDevtools initialIsOpen={false} />
     </div>
   ),
-})
+});

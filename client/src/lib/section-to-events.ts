@@ -13,11 +13,11 @@ const DAY_MAP: Record<string, number> = {
 };
 
 const COLORS = [
-  { bg: "#3b82f6", text: "#ffffff" }, // blue
-  { bg: "#10b981", text: "#ffffff" }, // emerald
-  { bg: "#8b5cf6", text: "#ffffff" }, // violet
-  { bg: "#f59e0b", text: "#000000" }, // amber
   { bg: "#ef4444", text: "#ffffff" }, // red
+  { bg: "#22c55e", text: "#ffffff" }, // green
+  { bg: "#3b82f6", text: "#ffffff" }, // blue
+  { bg: "#f97316", text: "#ffffff" }, // orange
+  { bg: "#8b5cf6", text: "#ffffff" }, // violet
   { bg: "#ec4899", text: "#ffffff" }, // pink
   { bg: "#06b6d4", text: "#000000" }, // cyan
 ];
@@ -95,9 +95,10 @@ export interface GroupedSections {
 
 export function sectionsToEvents(
   sections: Section[],
-  referenceDate: Date
+  referenceDate: Date,
+  colorIndex: number = 0
 ): CalendarEvent[] {
-  return sections.flatMap((section, index) => 
-    sectionToEvents(section, referenceDate, index)
+  return sections.flatMap((section) =>
+    sectionToEvents(section, referenceDate, colorIndex)
   );
 }

@@ -1,9 +1,9 @@
 import type { CalendarEvent } from "./calendar-types";
 import { useCalendarContext } from "./calendar-context";
-import { format, isSameDay } from "date-fns";
-import { cn } from "@/lib/utils";
+import { isSameDay } from "date-fns";
+import { cn, hexToRgba } from "@/lib/utils";
 import { motion, MotionConfig, AnimatePresence } from "framer-motion";
-import { Clock, MapPin, Users } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
 
 interface EventPosition {
   left: string;
@@ -31,9 +31,16 @@ function calculateEventPosition(
   allEvents: CalendarEvent[],
 ): EventPosition {
   const overlappingEvents = getOverlappingEvents(event, allEvents);
-  const group = [event, ...overlappingEvents].sort(
-    (a, b) => a.start.getTime() - b.start.getTime(),
-  );
+  const group = [event, ...overlappingEvents].sort((a, b) => {
+    const startDiff = a.start.getTime() - b.start.getTime();
+    if (startDiff !== 0) return startDiff;
+    const durationDiff =
+      b.end.getTime() -
+      b.start.getTime() -
+      (a.end.getTime() - a.start.getTime());
+    if (durationDiff !== 0) return durationDiff;
+    return a.id.localeCompare(b.id);
+  });
   const position = group.indexOf(event);
   const width = `${100 / (overlappingEvents.length + 1)}%`;
   const left = `${(position * 100) / (overlappingEvents.length + 1)}%`;
@@ -78,16 +85,16 @@ export default function CalendarEvent({
       <AnimatePresence mode="wait">
         <motion.div
           className={cn(
-            "px-3 py-1.5 rounded-md truncate cursor-pointer transition-all duration-300",
-            "absolute shadow-sm ring-1 ring-black/10 dark:ring-white/10",
-            "border",
+            "px-2.5 py-2 rounded-md cursor-pointer transition-all duration-200",
+            "absolute shadow-sm hover:shadow-md hover:z-10 border-l-4",
+            "flex flex-col overflow-hidden",
             className,
           )}
           style={{
             ...style,
-            backgroundColor: event.color,
-            color: event.textColor ?? "#ffffff",
-            borderColor: event.borderColor ?? event.color,
+            backgroundColor: hexToRgba(event.color, 0.15),
+            borderColor: event.color,
+            color: "var(--foreground)",
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -126,25 +133,22 @@ export default function CalendarEvent({
           }}
           layoutId={`event-${animationKey}-day`}
         >
-          <motion.div className={cn("flex flex-col w-full")} layout="position">
-            <p className="font-bold truncate">
-              {event.section.subject} {event.section.courseNumber}
-            </p>
-            <div className="text-sm">
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{format(event.start, "h:mm a")}</span>
-                <span className="mx-1">-</span>
-                <span>{format(event.end, "h:mm a")}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
+          <motion.div className={cn("flex flex-col w-full h-full")} layout="position">
+            <div className="font-bold text-xs sm:text-sm leading-tight mb-0.5 truncate text-foreground/90">
+              {event.section.subject} {event.section.courseNumber} {event.section.section}
+            </div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground flex flex-col gap-0.5 min-h-0">
+              <div className="flex items-center gap-1 min-w-0">
+                <MapPin className="h-3 w-3 shrink-0 opacity-70" />
                 <span className="truncate">{event.section.location}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span className="truncate">{event.section.instructor}</span>
-              </div>
+
+              {event.section.scheduleType === "Lecture" && (
+                <div className="flex items-center gap-1 min-w-0">
+                  <Users className="h-3 w-3 shrink-0 opacity-70" />
+                  <span className="truncate">{event.section.instructor}</span>
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

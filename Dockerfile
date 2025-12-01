@@ -52,7 +52,7 @@ RUN chmod +x /entrypoint.sh
 
 # Environment Defaults
 ENV PORT=4000
-ENV DATABASE_URL=""
+ENV DATABASE_URL="/data/scheduler.db"
 
 # Start the script
 CMD ["/entrypoint.sh"]

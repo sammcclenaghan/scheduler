@@ -26,9 +26,12 @@ goose -dir /migrations sqlite3 "$DB_URL" up
 echo "Seeding database..."
 /seeder -db="$DB_URL" -data=/seed-data
 
-# Start server in background
-/app &
+echo "Starting Go server..."
+DATABASE_URL="$DB_URL" /app &
 
-# Start Caddy
+# Wait a moment to ensure server starts
+sleep 1
+
+echo "Starting Caddy..."
 caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
 

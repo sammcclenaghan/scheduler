@@ -1,4 +1,5 @@
-import type { Course, Section } from "./types";
+import type { Course, CourseSearchResult } from "./types";
+import type { GroupedSections } from "./section-to-events";
 
 const API_BASE = "/api";
 
@@ -44,15 +45,19 @@ export const coursesApi = {
 
   /**
    * Search courses by subject code prefix.
+   * Returns courses with their default sections.
    * @param query - The search query (e.g., "CSC1")
    * @param term - Optional term filter (e.g., "202601")
    */
-  search: (query: string, term?: string): Promise<Course[]> => {
+  search: (query: string, term?: string): Promise<CourseSearchResult[]> => {
     const params = new URLSearchParams({ q: query });
     if (term) {
       params.set("term", term);
     }
-    return fetchJson<Course[]>(`${API_BASE}/search/courses?${params}`);
+    return fetchJson<CourseSearchResult[]>(`${API_BASE}/search/courses?${params}`).then((data) => {
+      console.log("API search response:", data);
+      return data;
+    });
   },
 };
 
@@ -64,16 +69,16 @@ export const sectionsApi = {
    * List sections by course PID.
    * @param pid - The course PID
    */
-  listByPid: (pid: string): Promise<Section[]> =>
-    fetchJson<Section[]>(`${API_BASE}/sections/${pid}`),
+  listByPid: (pid: string): Promise<GroupedSections> =>
+    fetchJson<GroupedSections>(`${API_BASE}/sections/${pid}`),
 
   /**
    * List sections by course PID and term.
    * @param pid - The course PID
    * @param term - The term (e.g. "202501")
    */
-  listByPidAndTerm: (pid: string, term: string): Promise<Section[]> =>
-    fetchJson<Section[]>(`${API_BASE}/sections/${pid}/${term}`),
+  listByPidAndTerm: (pid: string, term: string): Promise<GroupedSections> =>
+    fetchJson<GroupedSections>(`${API_BASE}/sections/${pid}/${term}`),
 };
 
 

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -25,6 +26,11 @@ type CourseBySubjectCodeGetter interface {
 type CourseSearcher interface {
 	SearchCoursesBySubjectCode(ctx context.Context, arg db.SearchCoursesBySubjectCodeParams) ([]db.Course, error)
 	SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg db.SearchCoursesBySubjectCodeAndTermParams) ([]db.Course, error)
+}
+
+type CourseWithDefaultSections struct {
+	Course          db.Course    `json:"course"`
+	DefaultSections []db.Section `json:"defaultSections"`
 }
 
 func GetCourse(store CourseGetter) http.HandlerFunc {
@@ -61,7 +67,7 @@ func GetCourse(store CourseGetter) http.HandlerFunc {
 	}
 }
 
-func SearchCourses(store CourseSearcher) http.HandlerFunc {
+func SearchCourses(courseStore CourseSearcher, sectionStore SectionsLister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("q")
 		if query == "" {
@@ -76,14 +82,14 @@ func SearchCourses(store CourseSearcher) http.HandlerFunc {
 
 		if term != "" {
 			// Filter courses by term (only courses with sections in the given term)
-			courses, err = store.SearchCoursesBySubjectCodeAndTerm(r.Context(), db.SearchCoursesBySubjectCodeAndTermParams{
+			courses, err = courseStore.SearchCoursesBySubjectCodeAndTerm(r.Context(), db.SearchCoursesBySubjectCodeAndTermParams{
 				Column1: &query,
 				REPLACE: query,
 				Term:    term,
 			})
 		} else {
 			// Return all matching courses regardless of term
-			courses, err = store.SearchCoursesBySubjectCode(r.Context(), db.SearchCoursesBySubjectCodeParams{
+			courses, err = courseStore.SearchCoursesBySubjectCode(r.Context(), db.SearchCoursesBySubjectCodeParams{
 				Column1: &query,
 				REPLACE: query,
 			})
@@ -94,8 +100,64 @@ func SearchCourses(store CourseSearcher) http.HandlerFunc {
 			return
 		}
 
+		// Enrich courses with default sections
+		coursesWithDefaults := make([]CourseWithDefaultSections, 0, len(courses))
+		for _, course := range courses {
+			var sections []db.Section
+			if term != "" {
+				sections, err = sectionStore.ListSectionsByCourseAndTerm(r.Context(), db.ListSectionsByCourseAndTermParams{
+					CoursePid: &course.Pid,
+					Term:      term,
+				})
+			} else {
+				sections, err = sectionStore.ListSectionsByCourse(r.Context(), &course.Pid)
+			}
+
+			if err != nil {
+				http.Error(w, "failed to fetch sections", http.StatusInternalServerError)
+				return
+			}
+
+			// Group sections by type and select defaults
+			grouped := make(map[string][]db.Section)
+			grouped["lectures"] = []db.Section{}
+			grouped["labs"] = []db.Section{}
+			grouped["tutorials"] = []db.Section{}
+			grouped["other"] = []db.Section{}
+
+			for _, sec := range sections {
+				switch strings.ToLower(sec.ScheduleType) {
+				case "lecture":
+					grouped["lectures"] = append(grouped["lectures"], sec)
+				case "lab":
+					grouped["labs"] = append(grouped["labs"], sec)
+				case "tutorial":
+					grouped["tutorials"] = append(grouped["tutorials"], sec)
+				default:
+					grouped["other"] = append(grouped["other"], sec)
+				}
+			}
+
+			// Get default sections (first lecture, first lab, first tutorial)
+			defaults := []db.Section{}
+			if len(grouped["lectures"]) > 0 {
+				defaults = append(defaults, grouped["lectures"][0])
+			}
+			if len(grouped["labs"]) > 0 {
+				defaults = append(defaults, grouped["labs"][0])
+			}
+			if len(grouped["tutorials"]) > 0 {
+				defaults = append(defaults, grouped["tutorials"][0])
+			}
+
+			coursesWithDefaults = append(coursesWithDefaults, CourseWithDefaultSections{
+				Course:          course,
+				DefaultSections: defaults,
+			})
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(courses); err != nil {
+		if err := json.NewEncoder(w).Encode(coursesWithDefaults); err != nil {
 			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 			return
 		}

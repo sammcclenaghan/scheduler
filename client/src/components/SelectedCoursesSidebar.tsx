@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { sectionQueries } from "../lib/queries";
 import type { Course, Section } from "../lib/types";
 
-
 interface SelectedCourse {
   course: Course;
   sections: Section[];
@@ -50,7 +49,8 @@ export function SelectedCoursesSidebar({
         ) : (
           <div className="space-y-2">
             <p className="text-gray-400 text-xs mb-3">
-              {selectedCourses.length} course{selectedCourses.length !== 1 && "s"} selected
+              {selectedCourses.length} course
+              {selectedCourses.length !== 1 && "s"} selected
             </p>
             {selectedCourses.map((selected) => (
               <CourseCard
@@ -59,11 +59,15 @@ export function SelectedCoursesSidebar({
                 isExpanded={expandedCourseId === selected.course.id}
                 onToggleExpand={() =>
                   setExpandedCourseId(
-                    expandedCourseId === selected.course.id ? null : selected.course.id
+                    expandedCourseId === selected.course.id
+                      ? null
+                      : selected.course.id,
                   )
                 }
                 onRemove={() => onCourseRemove(selected.course)}
-                onSectionsUpdate={(sections) => onSectionsUpdate(selected.course, sections)}
+                onSectionsUpdate={(sections) =>
+                  onSectionsUpdate(selected.course, sections)
+                }
               />
             ))}
           </div>
@@ -100,8 +104,9 @@ function CourseCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <ChevronRight
-                className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""
-                  }`}
+                className={`h-4 w-4 text-gray-400 transition-transform ${
+                  isExpanded ? "rotate-90" : ""
+                }`}
               />
               <span className="font-medium text-cyan-400 text-sm">
                 {course.subjectCode}
@@ -115,7 +120,9 @@ function CourseCard({
               {sections.length > 0 && (
                 <>
                   <span>•</span>
-                  <span>{sections.length} section{sections.length !== 1 && "s"}</span>
+                  <span>
+                    {sections.length} section{sections.length !== 1 && "s"}
+                  </span>
                 </>
               )}
             </div>
@@ -159,7 +166,7 @@ function SectionSelector({
   onSectionsUpdate,
 }: SectionSelectorProps) {
   const { data: allSections, isLoading } = useQuery(
-    sectionQueries.byPidAndTerm(course.pid, term)
+    sectionQueries.byPidAndTerm(course.pid, term),
   );
 
   if (isLoading) {
@@ -193,18 +200,19 @@ function SectionSelector({
     );
   }
 
-  const sectionGroups: { label: string; type: string; sections: Section[] }[] = [
-    { label: "Lectures", type: "Lecture", sections: grouped.lectures },
-    { label: "Labs", type: "Lab", sections: grouped.labs },
-    { label: "Tutorials", type: "Tutorial", sections: grouped.tutorials },
-    { label: "Other", type: "Other", sections: grouped.other },
-  ].filter((g) => g.sections.length > 0);
+  const sectionGroups: { label: string; type: string; sections: Section[] }[] =
+    [
+      { label: "Lectures", type: "Lecture", sections: grouped.lectures },
+      { label: "Labs", type: "Lab", sections: grouped.labs },
+      { label: "Tutorials", type: "Tutorial", sections: grouped.tutorials },
+      { label: "Other", type: "Other", sections: grouped.other },
+    ].filter((g) => g.sections.length > 0);
 
   const currentSectionCrns = new Set(currentSections.map((s) => s.crn));
 
   const handleSectionToggle = (section: Section, type: string) => {
     const otherTypeSections = currentSections.filter(
-      (s) => s.scheduleType !== type
+      (s) => s.scheduleType !== type,
     );
 
     if (currentSectionCrns.has(section.crn)) {
@@ -228,16 +236,18 @@ function SectionSelector({
                     <button
                       type="button"
                       onClick={() => handleSectionToggle(section, type)}
-                      className={`w-full text-left p-3 rounded-lg text-xs transition-all border ${isSelected
+                      className={`w-full text-left p-3 rounded-lg text-xs transition-all border ${
+                        isSelected
                           ? "bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_0_1px_rgba(6,182,212,0.3)]"
                           : "bg-gray-800/40 border-gray-700/50 hover:bg-gray-800 hover:border-gray-600"
-                        }`}
+                      }`}
                     >
                       <div className="mb-2.5 flex justify-between items-start">
-                        <span className={`text-sm font-bold ${isSelected ? "text-cyan-100" : "text-gray-100"}`}>
+                        <span
+                          className={`text-sm font-bold ${isSelected ? "text-cyan-100" : "text-gray-100"}`}
+                        >
                           {section.section}
                         </span>
-                        <span className="text-[10px] text-gray-500 font-mono">{section.crn}</span>
                       </div>
 
                       <div className="space-y-2">
@@ -256,20 +266,28 @@ function SectionSelector({
                           <div className="flex items-center gap-1.5">
                             <User className="w-3.5 h-3.5 shrink-0" />
                             <span>Seats</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${section.enrollmentSeatsAvailable > 0
-                                ? "bg-emerald-500/20 text-emerald-400"
-                                : "bg-red-500/20 text-red-400"
-                              }`}>
-                              {section.enrollmentActual}/{section.enrollmentMaximum}
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                section.enrollmentSeatsAvailable > 0
+                                  ? "bg-emerald-500/20 text-emerald-400"
+                                  : "bg-red-500/20 text-red-400"
+                              }`}
+                            >
+                              {section.enrollmentActual}/
+                              {section.enrollmentMaximum}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <span>Waitlist</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${section.waitlistActual > 0
-                                ? "bg-amber-500/20 text-amber-400"
-                                : "bg-emerald-500/20 text-emerald-400"
-                              }`}>
-                              {section.waitlistActual}/{section.waitlistCapacity}
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                section.waitlistActual > 0
+                                  ? "bg-amber-500/20 text-amber-400"
+                                  : "bg-emerald-500/20 text-emerald-400"
+                              }`}
+                            >
+                              {section.waitlistActual}/
+                              {section.waitlistCapacity}
                             </span>
                           </div>
                         </div>
@@ -328,6 +346,5 @@ function Tooltip({
     </div>
   );
 }
-
 
 export type { SelectedCourse };

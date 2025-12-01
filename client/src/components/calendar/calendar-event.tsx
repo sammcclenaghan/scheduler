@@ -1,7 +1,7 @@
 import type { CalendarEvent } from "./calendar-types";
 import { useCalendarContext } from "./calendar-context";
 import { isSameDay } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, hexToRgba } from "@/lib/utils";
 import { motion, MotionConfig, AnimatePresence } from "framer-motion";
 import { MapPin, Users } from "lucide-react";
 
@@ -85,16 +85,16 @@ export default function CalendarEvent({
       <AnimatePresence mode="wait">
         <motion.div
           className={cn(
-            "px-2 py-1 rounded-md cursor-pointer transition-all duration-300",
-            "absolute shadow-sm ring-1 ring-black/10 dark:ring-white/10",
-            "border flex flex-col overflow-hidden",
+            "px-2.5 py-2 rounded-md cursor-pointer transition-all duration-200",
+            "absolute shadow-sm hover:shadow-md hover:z-10 border-l-4",
+            "flex flex-col overflow-hidden",
             className,
           )}
           style={{
             ...style,
-            backgroundColor: event.color,
-            color: event.textColor ?? "#ffffff",
-            borderColor: event.borderColor ?? event.color,
+            backgroundColor: hexToRgba(event.color, 0.15),
+            borderColor: event.color,
+            color: "var(--foreground)",
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -134,18 +134,18 @@ export default function CalendarEvent({
           layoutId={`event-${animationKey}-day`}
         >
           <motion.div className={cn("flex flex-col w-full h-full")} layout="position">
-            <div className="font-bold text-xs sm:text-sm leading-tight mb-0.5 truncate">
+            <div className="font-bold text-xs sm:text-sm leading-tight mb-0.5 truncate text-foreground/90">
               {event.section.subject} {event.section.courseNumber} {event.section.section}
             </div>
-            <div className="text-[10px] sm:text-xs opacity-95 flex flex-col gap-0.5 min-h-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground flex flex-col gap-0.5 min-h-0">
               <div className="flex items-center gap-1 min-w-0">
-                <MapPin className="h-3 w-3 shrink-0" />
+                <MapPin className="h-3 w-3 shrink-0 opacity-70" />
                 <span className="truncate">{event.section.location}</span>
               </div>
 
               {event.section.scheduleType === "Lecture" && (
                 <div className="flex items-center gap-1 min-w-0">
-                  <Users className="h-3 w-3 shrink-0" />
+                  <Users className="h-3 w-3 shrink-0 opacity-70" />
                   <span className="truncate">{event.section.instructor}</span>
                 </div>
               )}

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Search, Calendar as CalendarIcon, List, PanelRightClose, PanelRightOpen } from "lucide-react";
 import Calendar from "../components/calendar/calendar";
+import AgendaView from "../components/calendar/agenda-view";
 import type { CalendarEvent } from "../components/calendar/calendar-types";
 import { CourseSearch } from "../components/CourseSearch";
 import {
@@ -27,12 +29,16 @@ export const Route = createFileRoute("/schedule")({
   }),
 });
 
+type MobileView = "search" | "calendar" | "courses";
+
 function Schedule() {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<SelectedCourse[]>([]);
   const [selectedTerm, setSelectedTermState] = useState(getTerm);
+  const [mobileView, setMobileView] = useState<MobileView>("calendar");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     getToken();
@@ -158,6 +164,7 @@ function Schedule() {
     setSelectedCourses(newCourses);
     addEventsForCourse(result.course, result.defaultSections);
     saveSchedule(newCourses);
+    setMobileView("calendar");
   };
 
   const addEventsForCourse = (course: Course, sections: Section[]) => {
@@ -242,27 +249,119 @@ function Schedule() {
   };
 
   return (
-    <div className="flex h-screen">
-      <aside className="w-80 bg-gray-900 text-white border-r border-gray-700 shrink-0 overflow-hidden">
+    <div className="flex flex-col h-screen md:flex-row">
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
+        <div className="flex">
+          <button
+            type="button"
+            onClick={() => setMobileView("search")}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
+              mobileView === "search"
+                ? "text-cyan-400"
+                : "text-gray-400"
+            }`}
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs">Search</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("calendar")}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
+              mobileView === "calendar"
+                ? "text-cyan-400"
+                : "text-gray-400"
+            }`}
+          >
+            <CalendarIcon className="h-5 w-5" />
+            <span className="text-xs">Calendar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("courses")}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${
+              mobileView === "courses"
+                ? "text-cyan-400"
+                : "text-gray-400"
+            }`}
+          >
+            <List className="h-5 w-5" />
+            <span className="text-xs">Courses</span>
+            {selectedCourses.length > 0 && (
+              <span className="absolute top-2 right-1/4 bg-cyan-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {selectedCourses.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </nav>
+
+      {/* Left Sidebar - Course Search */}
+      <aside
+        className={`
+          ${mobileView === "search" ? "flex" : "hidden"}
+          md:flex
+          w-full md:w-80 bg-gray-900 text-white border-r border-gray-700 shrink-0 overflow-hidden
+          flex-col pb-16 md:pb-0
+        `}
+      >
         <CourseSearch
           selectedTerm={selectedTerm}
           onTermChange={handleTermChange}
           onCourseSelect={handleCourseSelect}
         />
       </aside>
-      <main className="flex-1 overflow-hidden">
-        <div className="h-full bg-card text-card-foreground overflow-hidden">
-          <Calendar
-            events={events}
-            setEvents={setEvents}
-            date={date}
-            setDate={setDate}
-            selectedTerm={selectedTerm}
-            onShare={handleShare}
-          />
+
+      {/* Main Calendar - Desktop: full calendar, Mobile: agenda view */}
+      <main
+        className={`
+          ${mobileView === "calendar" ? "flex" : "hidden"}
+          md:flex
+          flex-1 overflow-hidden flex-col pb-16 md:pb-0
+        `}
+      >
+        <div className="h-full bg-card text-card-foreground overflow-hidden flex flex-col">
+          {/* Mobile: Agenda View */}
+          <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+            <div className="px-4 py-3 border-b bg-background flex items-center justify-between">
+              <h2 className="font-semibold">Schedule</h2>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Share
+              </button>
+            </div>
+            <AgendaView events={events} />
+          </div>
+
+          {/* Desktop: Full Calendar */}
+          <div className="hidden md:block h-full">
+            <Calendar
+              events={events}
+              setEvents={setEvents}
+              date={date}
+              setDate={setDate}
+              selectedTerm={selectedTerm}
+              onShare={handleShare}
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            />
+          </div>
         </div>
       </main>
-      <aside className="w-80 border-l border-gray-700 shrink-0 overflow-y-auto overflow-x-visible z-10">
+
+      {/* Right Sidebar - Selected Courses */}
+      <aside
+        className={`
+          ${mobileView === "courses" ? "flex" : "hidden"}
+          ${sidebarOpen ? "md:flex" : "md:hidden"}
+          w-full md:w-80 border-l border-gray-700 shrink-0 overflow-y-auto overflow-x-visible z-10
+          flex-col pb-16 md:pb-0
+        `}
+      >
         <SelectedCoursesSidebar
           selectedCourses={selectedCourses}
           onCourseRemove={handleCourseRemove}

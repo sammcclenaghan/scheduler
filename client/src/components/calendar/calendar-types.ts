@@ -19,4 +19,6 @@ export interface CalendarProps {
   calendarIconIsToday?: boolean
   selectedTerm?: string
   onShare?: () => void
+  sidebarOpen?: boolean
+  onToggleSidebar?: () => void
 }

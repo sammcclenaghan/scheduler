@@ -13,6 +13,8 @@ interface CalendarContextType {
   calendarIconIsToday: boolean
   selectedTerm?: string
   onShare?: () => void
+  sidebarOpen?: boolean
+  onToggleSidebar?: () => void
 }
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined)

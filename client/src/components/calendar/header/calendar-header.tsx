@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Share2, Check } from "lucide-react";
+import { Share2, Check, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCalendarContext } from "../calendar-context";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ interface CalendarHeaderProps {
 }
 
 export default function CalendarHeader({ className }: CalendarHeaderProps) {
-  const { onShare } = useCalendarContext();
+  const { onShare, sidebarOpen, onToggleSidebar } = useCalendarContext();
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -19,7 +19,7 @@ export default function CalendarHeader({ className }: CalendarHeaderProps) {
   };
 
   return (
-    <div className={cn("px-4 py-3 border-b bg-background flex items-center justify-end", className)}>
+    <div className={cn("px-4 py-3 border-b bg-background flex items-center justify-end gap-2", className)}>
       <Button
         variant="outline"
         size="sm"
@@ -38,6 +38,22 @@ export default function CalendarHeader({ className }: CalendarHeaderProps) {
           </>
         )}
       </Button>
+
+      {onToggleSidebar && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onToggleSidebar}
+          className="h-8 w-8"
+          title={sidebarOpen ? "Hide courses" : "Show courses"}
+        >
+          {sidebarOpen ? (
+            <PanelRightClose className="h-4 w-4" />
+          ) : (
+            <PanelRightOpen className="h-4 w-4" />
+          )}
+        </Button>
+      )}
     </div>
   );
 }

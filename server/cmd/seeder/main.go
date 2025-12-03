@@ -96,7 +96,7 @@ func main() {
 
 	// Seed courses
 	coursesPath := filepath.Join(*dataDir, "courses-scraped.json")
-	if err := seedCourses(ctx, q, coursesPath); err != nil {
+	if err := seedCourses(ctx, conn, coursesPath); err != nil {
 		log.Fatalf("Failed to seed courses: %v", err)
 	}
 
@@ -112,7 +112,7 @@ func main() {
 	for _, entry := range entries {
 		if strings.HasPrefix(entry.Name(), "sections-") && strings.HasSuffix(entry.Name(), ".json") {
 			sectionsPath := filepath.Join(*dataDir, entry.Name())
-			if err := seedSections(ctx, q, sectionsPath, pidIndex); err != nil {
+			if err := seedSections(ctx, conn, sectionsPath, pidIndex); err != nil {
 				log.Printf("Warning: failed to seed %s: %v", entry.Name(), err)
 			}
 		}
@@ -121,7 +121,7 @@ func main() {
 	log.Println("Seeding completed successfully")
 }
 
-func seedCourses(ctx context.Context, q *db.Queries, path string) error {
+func seedCourses(ctx context.Context, dbConn *sql.DB, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %w", path, err)
@@ -134,6 +134,14 @@ func seedCourses(ctx context.Context, q *db.Queries, path string) error {
 	}
 
 	log.Printf("Seeding %d courses from %s", len(courses), filepath.Base(path))
+
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	q := db.New(tx)
 
 	for _, c := range courses {
 		err := q.UpsertCourse(ctx, db.UpsertCourseParams{
@@ -149,6 +157,10 @@ func seedCourses(ctx context.Context, q *db.Queries, path string) error {
 		if err != nil {
 			return fmt.Errorf("failed to upsert course %s: %w", c.PID, err)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	log.Printf("Courses seeded successfully")
@@ -174,7 +186,7 @@ func buildPIDIndex(ctx context.Context, q *db.Queries) map[string]string {
 	return index
 }
 
-func seedSections(ctx context.Context, q *db.Queries, path string, pidIndex map[string]string) error {
+func seedSections(ctx context.Context, dbConn *sql.DB, path string, pidIndex map[string]string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %w", path, err)
@@ -187,6 +199,14 @@ func seedSections(ctx context.Context, q *db.Queries, path string, pidIndex map[
 	}
 
 	log.Printf("Seeding %d sections from %s", len(sections), filepath.Base(path))
+
+	tx, err := dbConn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	q := db.New(tx)
 
 	for _, s := range sections {
 		// Normalize: no space, uppercase (e.g., "CSC" + "230" -> "CSC230")
@@ -225,6 +245,10 @@ func seedSections(ctx context.Context, q *db.Queries, path string, pidIndex map[
 		if err != nil {
 			return fmt.Errorf("failed to upsert section %s: %w", s.CRN, err)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	log.Printf("Sections seeded successfully")

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Calendar as CalendarIcon, List, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Search, Calendar as CalendarIcon, List } from "lucide-react";
 import Calendar from "../components/calendar/calendar";
 import AgendaView from "../components/calendar/agenda-view";
 import type { CalendarEvent } from "../components/calendar/calendar-types";
@@ -256,11 +256,10 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("search")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
-              mobileView === "search"
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "search"
                 ? "text-cyan-400"
                 : "text-gray-400"
-            }`}
+              }`}
           >
             <Search className="h-5 w-5" />
             <span className="text-xs">Search</span>
@@ -268,11 +267,10 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("calendar")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
-              mobileView === "calendar"
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "calendar"
                 ? "text-cyan-400"
                 : "text-gray-400"
-            }`}
+              }`}
           >
             <CalendarIcon className="h-5 w-5" />
             <span className="text-xs">Calendar</span>
@@ -280,11 +278,10 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("courses")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${
-              mobileView === "courses"
+            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${mobileView === "courses"
                 ? "text-cyan-400"
                 : "text-gray-400"
-            }`}
+              }`}
           >
             <List className="h-5 w-5" />
             <span className="text-xs">Courses</span>

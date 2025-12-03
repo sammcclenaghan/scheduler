@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { coursesApi, sectionsApi } from "./api";
+import { coursesApi, sectionsApi, schedulesApi } from "./api";
 
 /**
  * Query options for courses.
@@ -70,5 +70,19 @@ export const sectionQueries = {
     }),
 };
 
-
+/**
+ * Query options for schedules.
+ */
+export const scheduleQueries = {
+  /**
+   * Get the schedule for a term.
+   * @example
+   * const { data } = useQuery(scheduleQueries.byTerm("202509"));
+   */
+  byTerm: (term: string) =>
+    queryOptions({
+      queryKey: ["schedules", term],
+      queryFn: () => schedulesApi.get(term),
+    }),
+};
 

@@ -22,6 +22,15 @@ type Course struct {
 	PreAndCorequisites string    `json:"preAndCorequisites"`
 }
 
+type Schedule struct {
+	ID          int64     `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       string    `json:"token"`
+	Term        string    `json:"term"`
+	SectionCrns string    `json:"sectionCrns"`
+}
+
 type Section struct {
 	ID                       int64     `json:"id"`
 	CreatedAt                time.Time `json:"createdAt"`

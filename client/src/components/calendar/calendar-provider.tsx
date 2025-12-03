@@ -8,6 +8,8 @@ interface CalendarProviderProps {
   date: Date
   setDate: React.Dispatch<React.SetStateAction<Date>>
   calendarIconIsToday?: boolean
+  selectedTerm?: string
+  onShare?: () => void
   children: React.ReactNode
 }
 
@@ -17,6 +19,8 @@ export default function CalendarProvider({
   date,
   setDate,
   calendarIconIsToday = true,
+  selectedTerm,
+  onShare,
   children,
 }: CalendarProviderProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
@@ -34,6 +38,8 @@ export default function CalendarProvider({
         manageEventDialogOpen,
         setManageEventDialogOpen,
         calendarIconIsToday,
+        selectedTerm,
+        onShare,
       }}
     >
       {children}

@@ -9,6 +9,8 @@ export default function Calendar({
   date,
   setDate,
   calendarIconIsToday = true,
+  selectedTerm,
+  onShare,
 }: CalendarProps) {
   return (
     <div className="h-full flex flex-col">
@@ -18,6 +20,8 @@ export default function Calendar({
         date={date}
         setDate={setDate}
         calendarIconIsToday={calendarIconIsToday}
+        selectedTerm={selectedTerm}
+        onShare={onShare}
       >
         <CalendarHeader />
         <CalendarBody />

@@ -11,6 +11,8 @@ interface CalendarContextType {
   manageEventDialogOpen: boolean
   setManageEventDialogOpen: React.Dispatch<React.SetStateAction<boolean>>
   calendarIconIsToday: boolean
+  selectedTerm?: string
+  onShare?: () => void
 }
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined)

@@ -9,6 +9,21 @@ import (
 	"context"
 )
 
+const deleteSchedule = `-- name: DeleteSchedule :exec
+DELETE FROM schedules
+WHERE token = ? AND term = ?
+`
+
+type DeleteScheduleParams struct {
+	Token string `json:"token"`
+	Term  string `json:"term"`
+}
+
+func (q *Queries) DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSchedule, arg.Token, arg.Term)
+	return err
+}
+
 const getCourse = `-- name: GetCourse :one
 
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
@@ -92,6 +107,80 @@ func (q *Queries) GetCourseBySubjectCode(ctx context.Context, arg GetCourseBySub
 	return i, err
 }
 
+const getSchedule = `-- name: GetSchedule :one
+
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE token = ? AND term = ?
+LIMIT 1
+`
+
+type GetScheduleParams struct {
+	Token string `json:"token"`
+	Term  string `json:"term"`
+}
+
+// Schedule queries
+func (q *Queries) GetSchedule(ctx context.Context, arg GetScheduleParams) (Schedule, error) {
+	row := q.db.QueryRowContext(ctx, getSchedule, arg.Token, arg.Term)
+	var i Schedule
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Token,
+		&i.Term,
+		&i.SectionCrns,
+	)
+	return i, err
+}
+
+const getSectionByCRN = `-- name: GetSectionByCRN :one
+SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
+FROM sections
+WHERE term = ? AND crn = ?
+LIMIT 1
+`
+
+type GetSectionByCRNParams struct {
+	Term string `json:"term"`
+	Crn  string `json:"crn"`
+}
+
+func (q *Queries) GetSectionByCRN(ctx context.Context, arg GetSectionByCRNParams) (Section, error) {
+	row := q.db.QueryRowContext(ctx, getSectionByCRN, arg.Term, arg.Crn)
+	var i Section
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Term,
+		&i.Crn,
+		&i.CoursePid,
+		&i.Subject,
+		&i.CourseNumber,
+		&i.CourseName,
+		&i.Section,
+		&i.ScheduleType,
+		&i.InstructionalMethod,
+		&i.Frequency,
+		&i.Time,
+		&i.Days,
+		&i.Location,
+		&i.DateRange,
+		&i.Instructor,
+		&i.Units,
+		&i.AdditionalInformation,
+		&i.EnrollmentActual,
+		&i.EnrollmentMaximum,
+		&i.EnrollmentSeatsAvailable,
+		&i.WaitlistCapacity,
+		&i.WaitlistActual,
+		&i.WaitlistSeatsAvailable,
+	)
+	return i, err
+}
+
 const listCourses = `-- name: ListCourses :many
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses
@@ -125,6 +214,43 @@ func (q *Queries) ListCourses(ctx context.Context, arg ListCoursesParams) ([]Cou
 			&i.HoursCatalogText,
 			&i.Notes,
 			&i.PreAndCorequisites,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedulesByToken = `-- name: ListSchedulesByToken :many
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE token = ?
+ORDER BY term DESC
+`
+
+func (q *Queries) ListSchedulesByToken(ctx context.Context, token string) ([]Schedule, error) {
+	rows, err := q.db.QueryContext(ctx, listSchedulesByToken, token)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Schedule
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Token,
+			&i.Term,
+			&i.SectionCrns,
 		); err != nil {
 			return nil, err
 		}
@@ -393,6 +519,25 @@ func (q *Queries) UpsertCourse(ctx context.Context, arg UpsertCourseParams) erro
 		arg.Notes,
 		arg.PreAndCorequisites,
 	)
+	return err
+}
+
+const upsertSchedule = `-- name: UpsertSchedule :exec
+INSERT INTO schedules (token, term, section_crns)
+VALUES (?, ?, ?)
+ON CONFLICT(token, term) DO UPDATE SET
+    section_crns = excluded.section_crns,
+    updated_at = CURRENT_TIMESTAMP
+`
+
+type UpsertScheduleParams struct {
+	Token       string `json:"token"`
+	Term        string `json:"term"`
+	SectionCrns string `json:"sectionCrns"`
+}
+
+func (q *Queries) UpsertSchedule(ctx context.Context, arg UpsertScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, upsertSchedule, arg.Token, arg.Term, arg.SectionCrns)
 	return err
 }
 

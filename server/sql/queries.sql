@@ -90,3 +90,34 @@ FROM courses
 WHERE subject_code = ? OR REPLACE(subject_code, ' ', '') = REPLACE(?, ' ', '')
 LIMIT 1;
 
+-- Schedule queries
+
+-- name: GetSchedule :one
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE token = ? AND term = ?
+LIMIT 1;
+
+-- name: UpsertSchedule :exec
+INSERT INTO schedules (token, term, section_crns)
+VALUES (?, ?, ?)
+ON CONFLICT(token, term) DO UPDATE SET
+    section_crns = excluded.section_crns,
+    updated_at = CURRENT_TIMESTAMP;
+
+-- name: DeleteSchedule :exec
+DELETE FROM schedules
+WHERE token = ? AND term = ?;
+
+-- name: ListSchedulesByToken :many
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE token = ?
+ORDER BY term DESC;
+
+-- name: GetSectionByCRN :one
+SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
+FROM sections
+WHERE term = ? AND crn = ?
+LIMIT 1;
+

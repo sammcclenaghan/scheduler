@@ -17,4 +17,6 @@ export interface CalendarProps {
   date: Date
   setDate: React.Dispatch<React.SetStateAction<Date>>
   calendarIconIsToday?: boolean
+  selectedTerm?: string
+  onShare?: () => void
 }

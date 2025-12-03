@@ -63,4 +63,11 @@ export interface CourseSearchResult {
   defaultSections: Section[];
 }
 
+/**
+ * ScheduleResponse returned from /schedules/:term endpoint
+ */
+export interface ScheduleResponse {
+  term: string;
+  sectionCrns: string[];
+}
 

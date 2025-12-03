@@ -13,6 +13,7 @@ import (
 type SectionsLister interface {
 	ListSectionsByCourseAndTerm(ctx context.Context, arg db.ListSectionsByCourseAndTermParams) ([]db.Section, error)
 	ListSectionsByCourse(ctx context.Context, coursePid *string) ([]db.Section, error)
+	GetSectionByCRN(ctx context.Context, arg db.GetSectionByCRNParams) (db.Section, error)
 }
 
 type GroupedSections struct {
@@ -67,6 +68,46 @@ func ListSectionsByPID(store SectionsLister) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(GroupedSections{Sections: grouped}); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		}
+	}
+}
+
+func GetSectionsByCRNs(store SectionsLister) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		term := chi.URLParam(r, "term")
+		if term == "" {
+			http.Error(w, "missing term parameter", http.StatusBadRequest)
+			return
+		}
+
+		crnsParam := r.URL.Query().Get("crns")
+		if crnsParam == "" {
+			http.Error(w, "missing crns query parameter", http.StatusBadRequest)
+			return
+		}
+
+		crns := strings.Split(crnsParam, ",")
+		sections := make([]db.Section, 0, len(crns))
+
+		for _, crn := range crns {
+			crn = strings.TrimSpace(crn)
+			if crn == "" {
+				continue
+			}
+
+			section, err := store.GetSectionByCRN(r.Context(), db.GetSectionByCRNParams{
+				Term: term,
+				Crn:  crn,
+			})
+			if err != nil {
+				continue
+			}
+			sections = append(sections, section)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(sections); err != nil {
 			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		}
 	}

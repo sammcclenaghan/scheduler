@@ -43,6 +43,12 @@ func (s *Server) MountHandlers() {
 	s.Router.Get("/api/courses/{id}", handlers.GetCourse(s.Queries))
 	s.Router.Get("/api/search/courses", handlers.SearchCourses(s.Queries, s.Queries))
 	s.Router.Get("/api/sections/{pid}/{term}", handlers.ListSectionsByPID(s.Queries))
+	s.Router.Get("/api/sections/by-crns/{term}", handlers.GetSectionsByCRNs(s.Queries))
+
+	// Schedule routes
+	s.Router.Get("/api/schedules/{term}", handlers.GetSchedule(s.Queries))
+	s.Router.Put("/api/schedules/{term}", handlers.SaveSchedule(s.Queries))
+	s.Router.Delete("/api/schedules/{term}", handlers.DeleteSchedule(s.Queries))
 }
 
 func main() {

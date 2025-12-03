@@ -1,5 +1,6 @@
-import type { Course, CourseSearchResult } from "./types";
+import type { Course, CourseSearchResult, ScheduleResponse } from "./types";
 import type { GroupedSections } from "./section-to-events";
+import { getToken } from "./token";
 
 const API_BASE = "/api";
 
@@ -21,6 +22,19 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+/**
+ * Fetch with schedule token header
+ */
+async function fetchWithToken<T>(url: string, init?: RequestInit): Promise<T> {
+  return fetchJson<T>(url, {
+    ...init,
+    headers: {
+      "X-Schedule-Token": getToken(),
+      ...init?.headers,
+    },
+  });
 }
 
 /**
@@ -81,5 +95,35 @@ export const sectionsApi = {
     fetchJson<GroupedSections>(`${API_BASE}/sections/${pid}/${term}`),
 };
 
+/**
+ * Schedules API
+ */
+export const schedulesApi = {
+  /**
+   * Get the schedule for a term.
+   * @param term - The term (e.g., "202509")
+   */
+  get: (term: string): Promise<ScheduleResponse> =>
+    fetchWithToken<ScheduleResponse>(`${API_BASE}/schedules/${term}`),
 
+  /**
+   * Save the schedule for a term.
+   * @param term - The term
+   * @param sectionCrns - Array of section CRNs
+   */
+  save: (term: string, sectionCrns: string[]): Promise<ScheduleResponse> =>
+    fetchWithToken<ScheduleResponse>(`${API_BASE}/schedules/${term}`, {
+      method: "PUT",
+      body: JSON.stringify({ sectionCrns }),
+    }),
+
+  /**
+   * Delete the schedule for a term.
+   * @param term - The term
+   */
+  delete: (term: string): Promise<void> =>
+    fetchWithToken<void>(`${API_BASE}/schedules/${term}`, {
+      method: "DELETE",
+    }),
+};
 

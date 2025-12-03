@@ -10,13 +10,18 @@ const TERMS = [
 ];
 
 interface CourseSearchProps {
+  selectedTerm: string;
+  onTermChange: (term: string) => void;
   onCourseSelect?: (result: CourseSearchResult, term: string) => void;
 }
 
-export function CourseSearch({ onCourseSelect }: CourseSearchProps) {
+export function CourseSearch({
+  selectedTerm,
+  onTermChange,
+  onCourseSelect,
+}: CourseSearchProps) {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTerm, setSelectedTerm] = useState("202509");
 
   const {
     data: courses,
@@ -42,7 +47,7 @@ export function CourseSearch({ onCourseSelect }: CourseSearchProps) {
             <button
               key={term.code}
               type="button"
-              onClick={() => setSelectedTerm(term.code)}
+              onClick={() => onTermChange(term.code)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 selectedTerm === term.code
                   ? "bg-cyan-600 text-white"

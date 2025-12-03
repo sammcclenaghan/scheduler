@@ -27,7 +27,7 @@ echo "Seeding database..."
 /seeder -db="$DB_URL" -data=/seed-data
 
 echo "Starting Go server..."
-DATABASE_URL="$DB_URL" /app &
+PORT=4000 DATABASE_URL="$DB_URL" /app &
 
 # Wait a moment to ensure server starts
 sleep 1

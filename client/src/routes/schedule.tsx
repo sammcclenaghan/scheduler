@@ -223,7 +223,7 @@ function Schedule() {
 
   const handleCourseRemove = (course: Course) => {
     const newCourses = selectedCourses.filter(
-      (sc) => sc.course.id !== course.id,
+      (sc) => sc.course.pid !== course.pid,
     );
     setSelectedCourses(newCourses);
 

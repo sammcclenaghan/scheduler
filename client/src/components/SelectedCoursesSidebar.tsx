@@ -25,7 +25,7 @@ export function SelectedCoursesSidebar({
   onSectionsUpdate,
   onClearAll,
 }: SelectedCoursesSidebarProps) {
-  const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
+  const [expandedCourseKey, setExpandedCourseKey] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white overflow-x-visible">
@@ -52,24 +52,25 @@ export function SelectedCoursesSidebar({
               {selectedCourses.length} course
               {selectedCourses.length !== 1 && "s"} selected
             </p>
-            {selectedCourses.map((selected) => (
-              <CourseCard
-                key={selected.course.id}
-                selectedCourse={selected}
-                isExpanded={expandedCourseId === selected.course.id}
-                onToggleExpand={() =>
-                  setExpandedCourseId(
-                    expandedCourseId === selected.course.id
-                      ? null
-                      : selected.course.id,
-                  )
-                }
-                onRemove={() => onCourseRemove(selected.course)}
-                onSectionsUpdate={(sections) =>
-                  onSectionsUpdate(selected.course, sections)
-                }
-              />
-            ))}
+            {selectedCourses.map((selected) => {
+              const courseKey = `${selected.course.pid}-${selected.term}`;
+              return (
+                <CourseCard
+                  key={courseKey}
+                  selectedCourse={selected}
+                  isExpanded={expandedCourseKey === courseKey}
+                  onToggleExpand={() =>
+                    setExpandedCourseKey((prev) =>
+                      prev === courseKey ? null : courseKey,
+                    )
+                  }
+                  onRemove={() => onCourseRemove(selected.course)}
+                  onSectionsUpdate={(sections) =>
+                    onSectionsUpdate(selected.course, sections)
+                  }
+                />
+              );
+            })}
           </div>
         )}
       </div>

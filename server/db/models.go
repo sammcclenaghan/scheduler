@@ -23,12 +23,13 @@ type Course struct {
 }
 
 type Schedule struct {
-	ID          int64     `json:"id"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	Token       string    `json:"token"`
-	Term        string    `json:"term"`
-	SectionCrns string    `json:"sectionCrns"`
+	ID                 int64     `json:"id"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
+	Token              string    `json:"token"`
+	Term               string    `json:"term"`
+	SectionCrns        string    `json:"sectionCrns"`
+	CollaboratorTokens string    `json:"collaboratorTokens"`
 }
 
 type Section struct {

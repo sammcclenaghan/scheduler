@@ -14,7 +14,7 @@ import { sectionsToEvents } from "../lib/section-to-events";
 import type { CourseSearchResult, Course, Section } from "../lib/types";
 import { scheduleQueries } from "../lib/queries";
 import { schedulesApi } from "../lib/api";
-import { getToken, getTerm, setTerm, getShareableUrl } from "../lib/token";
+import { getSharedToken, getOwnToken, getTerm, setTerm, getShareableUrl } from "../lib/token";
 
 type ScheduleSearch = {
   t?: string;
@@ -39,10 +39,21 @@ function Schedule() {
   const [selectedTerm, setSelectedTermState] = useState(getTerm);
   const [mobileView, setMobileView] = useState<MobileView>("calendar");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [hasJoined, setHasJoined] = useState(false);
 
+  // Join shared schedule if opened via shared link
   useEffect(() => {
-    getToken();
-  }, []);
+    const sharedToken = getSharedToken();
+    const ownToken = getOwnToken();
+    
+    if (sharedToken && sharedToken !== ownToken && !hasJoined) {
+      schedulesApi.join(selectedTerm, sharedToken).then(() => {
+        setHasJoined(true);
+        // Refresh the schedule data
+        queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      }).catch(console.error);
+    }
+  }, [selectedTerm, hasJoined, queryClient]);
 
   const setSelectedTerm = (term: string) => {
     setTerm(term);

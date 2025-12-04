@@ -14,7 +14,9 @@ import (
 
 type ScheduleStore interface {
 	GetSchedule(ctx context.Context, arg db.GetScheduleParams) (db.Schedule, error)
+	GetScheduleByOwner(ctx context.Context, arg db.GetScheduleByOwnerParams) (db.Schedule, error)
 	UpsertSchedule(ctx context.Context, arg db.UpsertScheduleParams) error
+	UpdateScheduleCollaborators(ctx context.Context, arg db.UpdateScheduleCollaboratorsParams) error
 	DeleteSchedule(ctx context.Context, arg db.DeleteScheduleParams) error
 }
 
@@ -25,6 +27,10 @@ type ScheduleResponse struct {
 
 type SaveScheduleRequest struct {
 	SectionCRNs []string `json:"sectionCrns"`
+}
+
+type JoinScheduleRequest struct {
+	OwnerToken string `json:"ownerToken"`
 }
 
 func GetSchedule(store ScheduleStore) http.HandlerFunc {
@@ -139,5 +145,91 @@ func DeleteSchedule(store ScheduleStore) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// JoinSchedule adds the requesting user's token as a collaborator to the owner's schedule
+func JoinSchedule(store ScheduleStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userToken := r.Header.Get("X-Schedule-Token")
+		if userToken == "" {
+			http.Error(w, "missing X-Schedule-Token header", http.StatusBadRequest)
+			return
+		}
+
+		term := chi.URLParam(r, "term")
+		if term == "" {
+			http.Error(w, "missing term parameter", http.StatusBadRequest)
+			return
+		}
+
+		var req JoinScheduleRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		if req.OwnerToken == "" {
+			http.Error(w, "missing ownerToken", http.StatusBadRequest)
+			return
+		}
+
+		// Don't add yourself as collaborator
+		if userToken == req.OwnerToken {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]bool{"joined": true})
+			return
+		}
+
+		// Get the owner's schedule
+		schedule, err := store.GetScheduleByOwner(r.Context(), db.GetScheduleByOwnerParams{
+			Token: req.OwnerToken,
+			Term:  term,
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "schedule not found", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "failed to fetch schedule", http.StatusInternalServerError)
+			return
+		}
+
+		// Parse existing collaborators
+		var collaborators []string
+		if err := json.Unmarshal([]byte(schedule.CollaboratorTokens), &collaborators); err != nil {
+			collaborators = []string{}
+		}
+
+		// Check if already a collaborator
+		for _, c := range collaborators {
+			if c == userToken {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]bool{"joined": true})
+				return
+			}
+		}
+
+		// Add new collaborator
+		collaborators = append(collaborators, userToken)
+		collaboratorsJSON, err := json.Marshal(collaborators)
+		if err != nil {
+			http.Error(w, "failed to encode collaborators", http.StatusInternalServerError)
+			return
+		}
+
+		// Update the schedule
+		err = store.UpdateScheduleCollaborators(r.Context(), db.UpdateScheduleCollaboratorsParams{
+			CollaboratorTokens: string(collaboratorsJSON),
+			Token:              req.OwnerToken,
+			Term:               term,
+		})
+		if err != nil {
+			http.Error(w, "failed to update collaborators", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]bool{"joined": true})
 	}
 }

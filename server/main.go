@@ -49,6 +49,7 @@ func (s *Server) MountHandlers() {
 	s.Router.Get("/api/schedules/{term}", handlers.GetSchedule(s.Queries))
 	s.Router.Put("/api/schedules/{term}", handlers.SaveSchedule(s.Queries))
 	s.Router.Delete("/api/schedules/{term}", handlers.DeleteSchedule(s.Queries))
+	s.Router.Post("/api/schedules/{term}/join", handlers.JoinSchedule(s.Queries))
 }
 
 func main() {

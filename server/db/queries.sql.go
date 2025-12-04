@@ -109,9 +109,9 @@ func (q *Queries) GetCourseBySubjectCode(ctx context.Context, arg GetCourseBySub
 
 const getSchedule = `-- name: GetSchedule :one
 
-SELECT id, created_at, updated_at, token, term, section_crns
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
 FROM schedules
-WHERE token = ? AND term = ?
+WHERE (token = ?1 OR collaborator_tokens LIKE '%' || ?1 || '%') AND term = ?2
 LIMIT 1
 `
 
@@ -131,6 +131,34 @@ func (q *Queries) GetSchedule(ctx context.Context, arg GetScheduleParams) (Sched
 		&i.Token,
 		&i.Term,
 		&i.SectionCrns,
+		&i.CollaboratorTokens,
+	)
+	return i, err
+}
+
+const getScheduleByOwner = `-- name: GetScheduleByOwner :one
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
+FROM schedules
+WHERE token = ? AND term = ?
+LIMIT 1
+`
+
+type GetScheduleByOwnerParams struct {
+	Token string `json:"token"`
+	Term  string `json:"term"`
+}
+
+func (q *Queries) GetScheduleByOwner(ctx context.Context, arg GetScheduleByOwnerParams) (Schedule, error) {
+	row := q.db.QueryRowContext(ctx, getScheduleByOwner, arg.Token, arg.Term)
+	var i Schedule
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Token,
+		&i.Term,
+		&i.SectionCrns,
+		&i.CollaboratorTokens,
 	)
 	return i, err
 }
@@ -229,9 +257,9 @@ func (q *Queries) ListCourses(ctx context.Context, arg ListCoursesParams) ([]Cou
 }
 
 const listSchedulesByToken = `-- name: ListSchedulesByToken :many
-SELECT id, created_at, updated_at, token, term, section_crns
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
 FROM schedules
-WHERE token = ?
+WHERE token = ?1 OR collaborator_tokens LIKE '%' || ?1 || '%'
 ORDER BY term DESC
 `
 
@@ -251,6 +279,7 @@ func (q *Queries) ListSchedulesByToken(ctx context.Context, token string) ([]Sch
 			&i.Token,
 			&i.Term,
 			&i.SectionCrns,
+			&i.CollaboratorTokens,
 		); err != nil {
 			return nil, err
 		}
@@ -481,6 +510,23 @@ func (q *Queries) SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg Sea
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateScheduleCollaborators = `-- name: UpdateScheduleCollaborators :exec
+UPDATE schedules
+SET collaborator_tokens = ?, updated_at = CURRENT_TIMESTAMP
+WHERE token = ? AND term = ?
+`
+
+type UpdateScheduleCollaboratorsParams struct {
+	CollaboratorTokens string `json:"collaboratorTokens"`
+	Token              string `json:"token"`
+	Term               string `json:"term"`
+}
+
+func (q *Queries) UpdateScheduleCollaborators(ctx context.Context, arg UpdateScheduleCollaboratorsParams) error {
+	_, err := q.db.ExecContext(ctx, updateScheduleCollaborators, arg.CollaboratorTokens, arg.Token, arg.Term)
+	return err
 }
 
 const upsertCourse = `-- name: UpsertCourse :exec

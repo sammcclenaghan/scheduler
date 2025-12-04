@@ -125,5 +125,16 @@ export const schedulesApi = {
     fetchWithToken<void>(`${API_BASE}/schedules/${term}`, {
       method: "DELETE",
     }),
+
+  /**
+   * Join a shared schedule as a collaborator.
+   * @param term - The term
+   * @param ownerToken - The token of the schedule owner (from shared link)
+   */
+  join: (term: string, ownerToken: string): Promise<{ joined: boolean }> =>
+    fetchWithToken<{ joined: boolean }>(`${API_BASE}/schedules/${term}/join`, {
+      method: "POST",
+      body: JSON.stringify({ ownerToken }),
+    }),
 };
 

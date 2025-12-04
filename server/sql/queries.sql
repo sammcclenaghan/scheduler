@@ -93,7 +93,13 @@ LIMIT 1;
 -- Schedule queries
 
 -- name: GetSchedule :one
-SELECT id, created_at, updated_at, token, term, section_crns
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
+FROM schedules
+WHERE (token = sqlc.arg(token) OR collaborator_tokens LIKE '%' || sqlc.arg(token) || '%') AND term = sqlc.arg(term)
+LIMIT 1;
+
+-- name: GetScheduleByOwner :one
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
 FROM schedules
 WHERE token = ? AND term = ?
 LIMIT 1;
@@ -105,14 +111,19 @@ ON CONFLICT(token, term) DO UPDATE SET
     section_crns = excluded.section_crns,
     updated_at = CURRENT_TIMESTAMP;
 
+-- name: UpdateScheduleCollaborators :exec
+UPDATE schedules
+SET collaborator_tokens = ?, updated_at = CURRENT_TIMESTAMP
+WHERE token = ? AND term = ?;
+
 -- name: DeleteSchedule :exec
 DELETE FROM schedules
 WHERE token = ? AND term = ?;
 
 -- name: ListSchedulesByToken :many
-SELECT id, created_at, updated_at, token, term, section_crns
+SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
 FROM schedules
-WHERE token = ?
+WHERE token = sqlc.arg(token) OR collaborator_tokens LIKE '%' || sqlc.arg(token) || '%'
 ORDER BY term DESC;
 
 -- name: GetSectionByCRN :one

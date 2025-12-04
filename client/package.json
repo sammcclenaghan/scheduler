@@ -1,5 +1,5 @@
 {
-  "name": "vite-project",
+  "name": "uvic-course-scheduler",
   "private": true,
   "type": "module",
   "scripts": {

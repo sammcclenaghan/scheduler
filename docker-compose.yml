@@ -4,10 +4,10 @@ services:
   backend:
     build: .
     ports:
-      - "4002:4002"
+      - "4000:4000"
     environment:
       - DATABASE_URL=/data/scheduler.db
-      - PORT=4002
+      - PORT=4000
     volumes:
       - ./data:/data
 
@@ -15,12 +15,12 @@ services:
     image: node:20-alpine
     working_dir: /app
     ports:
-      - "4000:4000"
+      - "3000:3000"
     volumes:
       - ./client:/app
       - /app/node_modules
-    command: sh -c "npm install && npm run dev -- --host --port 4000"
+    command: sh -c "npm install && npm run dev -- --host --port 3000"
     environment:
-      - VITE_API_URL=http://backend:4002
+      - VITE_API_URL=http://backend:4000
     depends_on:
       - backend

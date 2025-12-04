@@ -1,6 +1,6 @@
 {
-  "short_name": "TanStack App",
-  "name": "Create TanStack App Sample",
+  "short_name": "UVic Scheduler",
+  "name": "UVic Course Scheduler",
   "icons": [
     {
       "src": "favicon.ico",

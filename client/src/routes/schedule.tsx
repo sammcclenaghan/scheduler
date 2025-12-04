@@ -14,7 +14,13 @@ import { sectionsToEvents } from "../lib/section-to-events";
 import type { CourseSearchResult, Course, Section } from "../lib/types";
 import { scheduleQueries } from "../lib/queries";
 import { schedulesApi } from "../lib/api";
-import { getSharedToken, getOwnToken, getTerm, setTerm, getShareableUrl } from "../lib/token";
+import {
+  getSharedToken,
+  getOwnToken,
+  getTerm,
+  setTerm,
+  getShareableUrl,
+} from "../lib/token";
 
 type ScheduleSearch = {
   t?: string;
@@ -24,8 +30,8 @@ type ScheduleSearch = {
 export const Route = createFileRoute("/schedule")({
   component: Schedule,
   validateSearch: (search: Record<string, unknown>): ScheduleSearch => ({
-    t: typeof search.t === "string" ? search.t : undefined,
-    term: typeof search.term === "string" ? search.term : undefined,
+    t: search.t as string,
+    term: search.term as string,
   }),
 });
 
@@ -36,24 +42,37 @@ function Schedule() {
   const [date, setDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<SelectedCourse[]>([]);
-  const [selectedTerm, setSelectedTermState] = useState(getTerm);
+  const [selectedTerm, setSelectedTermState] = useState(() => getTerm());
   const [mobileView, setMobileView] = useState<MobileView>("calendar");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
 
   // Join shared schedule if opened via shared link
+  // Read directly from window.location on mount to capture params before any routing
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTermParam = params.get("term");
     const sharedToken = getSharedToken();
     const ownToken = getOwnToken();
-    
-    if (sharedToken && sharedToken !== ownToken && !hasJoined) {
-      schedulesApi.join(selectedTerm, sharedToken).then(() => {
-        setHasJoined(true);
-        // Refresh the schedule data
-        queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      }).catch(console.error);
+
+    // Sync term from URL to state
+    if (urlTermParam) {
+      setSelectedTermState(urlTermParam);
+      setTerm(urlTermParam);
     }
-  }, [selectedTerm, hasJoined, queryClient]);
+
+    const termToUse = urlTermParam || selectedTerm;
+
+    if (sharedToken && sharedToken !== ownToken && !hasJoined) {
+      schedulesApi
+        .join(termToUse, sharedToken)
+        .then(() => {
+          setHasJoined(true);
+          queryClient.invalidateQueries({ queryKey: ["schedules"] });
+        })
+        .catch(console.error);
+    }
+  }, []);
 
   const setSelectedTerm = (term: string) => {
     setTerm(term);
@@ -267,10 +286,9 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("search")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "search"
-                ? "text-cyan-400"
-                : "text-gray-400"
-              }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
+              mobileView === "search" ? "text-cyan-400" : "text-gray-400"
+            }`}
           >
             <Search className="h-5 w-5" />
             <span className="text-xs">Search</span>
@@ -278,10 +296,9 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("calendar")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "calendar"
-                ? "text-cyan-400"
-                : "text-gray-400"
-              }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
+              mobileView === "calendar" ? "text-cyan-400" : "text-gray-400"
+            }`}
           >
             <CalendarIcon className="h-5 w-5" />
             <span className="text-xs">Calendar</span>
@@ -289,10 +306,9 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("courses")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${mobileView === "courses"
-                ? "text-cyan-400"
-                : "text-gray-400"
-              }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${
+              mobileView === "courses" ? "text-cyan-400" : "text-gray-400"
+            }`}
           >
             <List className="h-5 w-5" />
             <span className="text-xs">Courses</span>

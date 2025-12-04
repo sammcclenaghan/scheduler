@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+// Debug: Log URL before anything else runs
+console.log('Initial URL:', window.location.href)
+
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 

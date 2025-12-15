@@ -180,7 +180,7 @@ function Schedule() {
 
   const handleCourseSelect = (result: CourseSearchResult, term: string) => {
     const alreadySelected = selectedCourses.some(
-      (sc) => sc.course.id === result.course.id,
+      (sc) => sc.course.pid === result.course.pid,
     );
     if (alreadySelected) return;
 
@@ -239,7 +239,7 @@ function Schedule() {
 
   const handleSectionsUpdate = (course: Course, sections: Section[]) => {
     const newCourses = selectedCourses.map((sc) =>
-      sc.course.id === course.id ? { ...sc, sections } : sc,
+      sc.course.pid === course.pid ? { ...sc, sections } : sc,
     );
     setSelectedCourses(newCourses);
 
@@ -286,9 +286,8 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("search")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
-              mobileView === "search" ? "text-cyan-400" : "text-gray-400"
-            }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "search" ? "text-cyan-400" : "text-gray-400"
+              }`}
           >
             <Search className="h-5 w-5" />
             <span className="text-xs">Search</span>
@@ -296,9 +295,8 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("calendar")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 ${
-              mobileView === "calendar" ? "text-cyan-400" : "text-gray-400"
-            }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 ${mobileView === "calendar" ? "text-cyan-400" : "text-gray-400"
+              }`}
           >
             <CalendarIcon className="h-5 w-5" />
             <span className="text-xs">Calendar</span>
@@ -306,9 +304,8 @@ function Schedule() {
           <button
             type="button"
             onClick={() => setMobileView("courses")}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${
-              mobileView === "courses" ? "text-cyan-400" : "text-gray-400"
-            }`}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 relative ${mobileView === "courses" ? "text-cyan-400" : "text-gray-400"
+              }`}
           >
             <List className="h-5 w-5" />
             <span className="text-xs">Courses</span>

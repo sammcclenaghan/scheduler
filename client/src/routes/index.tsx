@@ -6,51 +6,49 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 md:p-12 font-sans text-slate-900">
-      <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center pt-32 p-4 relative overflow-hidden text-slate-800">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#005493]/10 rounded-full blur-3xl opacity-60 pointer-events-none mix-blend-multiply" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[#F5AA1C]/10 rounded-full blur-3xl opacity-60 pointer-events-none mix-blend-multiply" />
+      <div className="absolute top-[40%] left-[80%] w-64 h-64 bg-[#005493]/5 rounded-full blur-3xl opacity-60 pointer-events-none mix-blend-multiply" />
 
-        {/* Left Column: Text */}
-        <div className="space-y-8">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
-            Explore UVic <br />
-            <span className="text-[#005493]">Courses</span>
+      <div className="max-w-3xl w-full text-center relative z-10 space-y-10">
+        <div className="space-y-6">
+          <div className="inline-block px-4 py-1.5 bg-white/60 backdrop-blur-sm border border-stone-200 rounded-full text-stone-600 text-sm font-medium shadow-sm">
+            Built by VikeLabs
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-stone-800">
+            Browse and schedule <br />
+            <span className="text-[#005493] decoration-4 decoration-[#F5AA1C] underline underline-offset-4">UVic courses</span>
           </h1>
 
-          <p className="text-xl text-slate-500 max-w-md leading-relaxed">
-            CourseUp makes it simple to browse and schedule UVic Courses.
+          <p className="text-xl text-stone-600 max-w-xl mx-auto leading-relaxed">
+            The easiest way to plan your semester. Fast, simple, and open source.
           </p>
-
-          <div className="flex items-center space-x-2 text-slate-600 font-medium">
-            <span>👋</span>
-            <span>Built by students @ <span className="text-slate-900 font-bold">VIKE LABS</span></span>
-          </div>
-
-          <div className="pt-4">
-            <Link
-              to="/schedule"
-              className="inline-flex items-center justify-center px-8 py-4 bg-[#005493] text-white text-lg font-bold rounded-lg hover:bg-[#00417a] transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
-            >
-              Start Scheduling
-            </Link>
-          </div>
         </div>
 
-        {/* Right Column: Hero Image (CSS Placeholder for 3D Illustration) */}
-        <div className="relative h-[400px] md:h-[600px] w-full flex items-center justify-center perspective-1000">
-          {/* Abstract 3D Composition using CSS transforms */}
-          <div className="relative w-64 h-40 bg-blue-100 rounded-lg transform rotate-x-60 rotate-z-45 shadow-2xl border-4 border-white z-10">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-blue-300 font-bold text-lg">Platform</span>
-            </div>
-          </div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-20 -ml-20 w-40 h-56 bg-gradient-to-br from-[#005493] to-blue-400 rounded-xl shadow-2xl rotate-y-12 rotate-z-6 border-4 border-white z-20 flex flex-col items-center justify-center p-4">
-            <div className="w-full h-2 bg-white/20 rounded mb-2"></div>
-            <div className="w-3/4 h-2 bg-white/20 rounded mb-4"></div>
-            <div className="w-full h-24 bg-white/10 rounded"></div>
-          </div>
-          <div className="absolute bottom-20 right-20 w-20 h-20 bg-blue-50 rounded-lg transform rotate-12 shadow-lg border-2 border-white z-0"></div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Link
+            to="/schedule"
+            className="group relative px-8 py-4 bg-[#005493] text-white text-lg font-semibold rounded-2xl hover:bg-[#00417a] transition-all shadow-xl shadow-blue-900/10 hover:shadow-2xl hover:shadow-blue-900/20 hover:-translate-y-1"
+          >
+            Let's Get Started
+          </Link>
+          <a
+            href="https://vikelabs.ca"
+            target="_blank"
+            rel="noreferrer"
+            className="px-8 py-4 bg-white text-stone-600 text-lg font-medium rounded-2xl border border-stone-200 hover:bg-stone-50 transition-all hover:border-stone-300"
+          >
+            Who built this?
+          </a>
         </div>
 
+        <div className="pt-8 flex flex-col items-center gap-3 text-stone-400">
+          <div className="w-16 h-1 bg-stone-200/50 rounded-full" />
+          <p className="text-sm font-medium">Made with ☕️ by VikeLabs</p>
+        </div>
       </div>
     </div>
   );

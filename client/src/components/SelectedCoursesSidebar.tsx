@@ -105,9 +105,8 @@ function CourseCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <ChevronRight
-                className={`h-4 w-4 text-gray-400 transition-transform ${
-                  isExpanded ? "rotate-90" : ""
-                }`}
+                className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""
+                  }`}
               />
               <span className="font-medium text-cyan-400 text-sm">
                 {course.subjectCode}
@@ -237,11 +236,10 @@ function SectionSelector({
                     <button
                       type="button"
                       onClick={() => handleSectionToggle(section, type)}
-                      className={`w-full text-left p-3 rounded-lg text-xs transition-all border ${
-                        isSelected
-                          ? "bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_0_1px_rgba(6,182,212,0.3)]"
-                          : "bg-gray-800/40 border-gray-700/50 hover:bg-gray-800 hover:border-gray-600"
-                      }`}
+                      className={`w-full text-left p-3 rounded-lg text-xs transition-all border ${isSelected
+                        ? "bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_0_1px_rgba(6,182,212,0.3)]"
+                        : "bg-gray-800/40 border-gray-700/50 hover:bg-gray-800 hover:border-gray-600"
+                        }`}
                     >
                       <div className="mb-2.5 flex justify-between items-start">
                         <span
@@ -268,11 +266,10 @@ function SectionSelector({
                             <User className="w-3.5 h-3.5 shrink-0" />
                             <span>Seats</span>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                section.enrollmentSeatsAvailable > 0
-                                  ? "bg-emerald-500/20 text-emerald-400"
-                                  : "bg-red-500/20 text-red-400"
-                              }`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${section.enrollmentSeatsAvailable > 0
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-red-500/20 text-red-400"
+                                }`}
                             >
                               {section.enrollmentActual}/
                               {section.enrollmentMaximum}
@@ -281,11 +278,10 @@ function SectionSelector({
                           <div className="flex items-center gap-1.5">
                             <span>Waitlist</span>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                section.waitlistActual > 0
-                                  ? "bg-amber-500/20 text-amber-400"
-                                  : "bg-emerald-500/20 text-emerald-400"
-                              }`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${section.waitlistActual > 0
+                                ? "bg-amber-500/20 text-amber-400"
+                                : "bg-emerald-500/20 text-emerald-400"
+                                }`}
                             >
                               {section.waitlistActual}/
                               {section.waitlistCapacity}

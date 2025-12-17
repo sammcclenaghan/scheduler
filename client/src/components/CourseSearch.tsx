@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "@tanstack/react-router";
+import { Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { courseQueries } from "../lib/queries";
 import type { CourseSearchResult } from "../lib/types";
@@ -48,11 +50,10 @@ export function CourseSearch({
               key={term.code}
               type="button"
               onClick={() => onTermChange(term.code)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                selectedTerm === term.code
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${selectedTerm === term.code
                   ? "bg-cyan-600 text-white"
                   : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
-              }`}
+                }`}
             >
               {term.label}
             </button>
@@ -90,19 +91,31 @@ export function CourseSearch({
             </p>
             <div className="space-y-2">
               {courses.map((result) => (
-                <button
-                  type="button"
+                <div
                   key={result.course.pid}
-                  onClick={() => onCourseSelect?.(result, selectedTerm)}
-                  className="block w-full text-left p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700"
+                  className="group flex items-center bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700 overflow-hidden"
                 >
-                  <div className="font-medium text-cyan-400 text-sm">
-                    {result.course.subjectCode}
-                  </div>
-                  <div className="text-gray-300 text-xs mt-1 line-clamp-2">
-                    {result.course.title}
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onCourseSelect?.(result, selectedTerm)}
+                    className="flex-1 text-left p-3 min-w-0"
+                  >
+                    <div className="font-medium text-cyan-400 text-sm">
+                      {result.course.subjectCode}
+                    </div>
+                    <div className="text-gray-300 text-xs mt-1 line-clamp-2">
+                      {result.course.title}
+                    </div>
+                  </button>
+                  <Link
+                    to="/courses/$subjectCode"
+                    params={{ subjectCode: result.course.subjectCode }}
+                    className="p-3 text-gray-400 hover:text-cyan-400 hover:bg-gray-600 transition-colors border-l border-gray-700"
+                    title="View Course Details"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Link>
+                </div>
               ))}
             </div>
           </div>

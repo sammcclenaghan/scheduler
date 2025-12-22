@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"strings"
 )
 
 const deleteSchedule = `-- name: DeleteSchedule :exec
@@ -163,50 +164,76 @@ func (q *Queries) GetScheduleByOwner(ctx context.Context, arg GetScheduleByOwner
 	return i, err
 }
 
-const getSectionByCRN = `-- name: GetSectionByCRN :one
+const getSectionsByCRNs = `-- name: GetSectionsByCRNs :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE term = ? AND crn = ?
-LIMIT 1
+WHERE term = ?1 AND crn IN (/*SLICE:crns*/?)
 `
 
-type GetSectionByCRNParams struct {
-	Term string `json:"term"`
-	Crn  string `json:"crn"`
+type GetSectionsByCRNsParams struct {
+	Term string   `json:"term"`
+	Crns []string `json:"crns"`
 }
 
-func (q *Queries) GetSectionByCRN(ctx context.Context, arg GetSectionByCRNParams) (Section, error) {
-	row := q.db.QueryRowContext(ctx, getSectionByCRN, arg.Term, arg.Crn)
-	var i Section
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Term,
-		&i.Crn,
-		&i.CoursePid,
-		&i.Subject,
-		&i.CourseNumber,
-		&i.CourseName,
-		&i.Section,
-		&i.ScheduleType,
-		&i.InstructionalMethod,
-		&i.Frequency,
-		&i.Time,
-		&i.Days,
-		&i.Location,
-		&i.DateRange,
-		&i.Instructor,
-		&i.Units,
-		&i.AdditionalInformation,
-		&i.EnrollmentActual,
-		&i.EnrollmentMaximum,
-		&i.EnrollmentSeatsAvailable,
-		&i.WaitlistCapacity,
-		&i.WaitlistActual,
-		&i.WaitlistSeatsAvailable,
-	)
-	return i, err
+func (q *Queries) GetSectionsByCRNs(ctx context.Context, arg GetSectionsByCRNsParams) ([]Section, error) {
+	query := getSectionsByCRNs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Term)
+	if len(arg.Crns) > 0 {
+		for _, v := range arg.Crns {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:crns*/?", strings.Repeat(",?", len(arg.Crns))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:crns*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Section
+	for rows.Next() {
+		var i Section
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Term,
+			&i.Crn,
+			&i.CoursePid,
+			&i.Subject,
+			&i.CourseNumber,
+			&i.CourseName,
+			&i.Section,
+			&i.ScheduleType,
+			&i.InstructionalMethod,
+			&i.Frequency,
+			&i.Time,
+			&i.Days,
+			&i.Location,
+			&i.DateRange,
+			&i.Instructor,
+			&i.Units,
+			&i.AdditionalInformation,
+			&i.EnrollmentActual,
+			&i.EnrollmentMaximum,
+			&i.EnrollmentSeatsAvailable,
+			&i.WaitlistCapacity,
+			&i.WaitlistActual,
+			&i.WaitlistSeatsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listCourses = `-- name: ListCourses :many
@@ -365,6 +392,79 @@ type ListSectionsByCourseAndTermParams struct {
 
 func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSectionsByCourseAndTermParams) ([]Section, error) {
 	rows, err := q.db.QueryContext(ctx, listSectionsByCourseAndTerm, arg.CoursePid, arg.Term)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Section
+	for rows.Next() {
+		var i Section
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Term,
+			&i.Crn,
+			&i.CoursePid,
+			&i.Subject,
+			&i.CourseNumber,
+			&i.CourseName,
+			&i.Section,
+			&i.ScheduleType,
+			&i.InstructionalMethod,
+			&i.Frequency,
+			&i.Time,
+			&i.Days,
+			&i.Location,
+			&i.DateRange,
+			&i.Instructor,
+			&i.Units,
+			&i.AdditionalInformation,
+			&i.EnrollmentActual,
+			&i.EnrollmentMaximum,
+			&i.EnrollmentSeatsAvailable,
+			&i.WaitlistCapacity,
+			&i.WaitlistActual,
+			&i.WaitlistSeatsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSectionsByCoursePidsAndTerm = `-- name: ListSectionsByCoursePidsAndTerm :many
+SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
+FROM sections
+WHERE course_pid IN (/*SLICE:pids*/?) AND term = ?2
+ORDER BY course_pid, schedule_type, crn ASC
+`
+
+type ListSectionsByCoursePidsAndTermParams struct {
+	Pids []*string `json:"pids"`
+	Term string    `json:"term"`
+}
+
+func (q *Queries) ListSectionsByCoursePidsAndTerm(ctx context.Context, arg ListSectionsByCoursePidsAndTermParams) ([]Section, error) {
+	query := listSectionsByCoursePidsAndTerm
+	var queryParams []interface{}
+	if len(arg.Pids) > 0 {
+		for _, v := range arg.Pids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:pids*/?", strings.Repeat(",?", len(arg.Pids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:pids*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.Term)
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

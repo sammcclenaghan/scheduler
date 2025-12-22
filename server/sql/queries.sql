@@ -44,7 +44,7 @@ ORDER BY term DESC, crn ASC;
 -- name: ListSectionsByCoursePidsAndTerm :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE course_pid IN (sqlc.slice(pids)) AND term = sqlc.arg(term)
+WHERE term = sqlc.arg(term) AND course_pid IN (sqlc.slice(pids))
 ORDER BY course_pid, schedule_type, crn ASC;
 
 -- name: UpsertSection :exec

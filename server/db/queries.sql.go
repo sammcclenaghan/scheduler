@@ -571,18 +571,19 @@ func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSecti
 const listSectionsByCoursePidsAndTerm = `-- name: ListSectionsByCoursePidsAndTerm :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE course_pid IN (/*SLICE:pids*/?) AND term = ?2
+WHERE term = ?1 AND course_pid IN (/*SLICE:pids*/?)
 ORDER BY course_pid, schedule_type, crn ASC
 `
 
 type ListSectionsByCoursePidsAndTermParams struct {
-	Pids []*string `json:"pids"`
 	Term string    `json:"term"`
+	Pids []*string `json:"pids"`
 }
 
 func (q *Queries) ListSectionsByCoursePidsAndTerm(ctx context.Context, arg ListSectionsByCoursePidsAndTermParams) ([]Section, error) {
 	query := listSectionsByCoursePidsAndTerm
 	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Term)
 	if len(arg.Pids) > 0 {
 		for _, v := range arg.Pids {
 			queryParams = append(queryParams, v)
@@ -591,7 +592,6 @@ func (q *Queries) ListSectionsByCoursePidsAndTerm(ctx context.Context, arg ListS
 	} else {
 		query = strings.Replace(query, "/*SLICE:pids*/?", "NULL", 1)
 	}
-	queryParams = append(queryParams, arg.Term)
 	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err

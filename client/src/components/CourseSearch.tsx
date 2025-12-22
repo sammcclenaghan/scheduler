@@ -154,7 +154,7 @@ function FullSearchContent({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by subject code (e.g., CSC, CSC 230)..."
+          placeholder="Search for courses..."
           className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
         />
       </div>
@@ -211,11 +211,6 @@ function FullSearchContent({
           </div>
         )}
 
-        {!searchTerm && (
-          <p className="text-gray-500 text-sm">
-            Enter a subject code to search (e.g., CSC, MATH, PHYS)
-          </p>
-        )}
       </div>
     </>
   );

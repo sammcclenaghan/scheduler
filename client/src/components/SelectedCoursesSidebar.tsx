@@ -48,10 +48,6 @@ export function SelectedCoursesSidebar({
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="text-gray-400 text-xs mb-3">
-              {selectedCourses.length} course
-              {selectedCourses.length !== 1 && "s"} selected
-            </p>
             {selectedCourses.map((selected) => {
               const courseKey = `${selected.course.pid}-${selected.term}`;
               return (

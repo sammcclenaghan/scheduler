@@ -41,6 +41,12 @@ FROM sections
 WHERE course_pid = ?
 ORDER BY term DESC, crn ASC;
 
+-- name: ListSectionsByCoursePidsAndTerm :many
+SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
+FROM sections
+WHERE course_pid IN (sqlc.slice(pids)) AND term = sqlc.arg(term)
+ORDER BY course_pid, schedule_type, crn ASC;
+
 -- name: UpsertSection :exec
 INSERT INTO sections (term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -93,15 +99,22 @@ LIMIT 1;
 -- Schedule queries
 
 -- name: GetSchedule :one
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
-FROM schedules
-WHERE (token = sqlc.arg(token) OR collaborator_tokens LIKE '%' || sqlc.arg(token) || '%') AND term = sqlc.arg(term)
+SELECT s.id, s.created_at, s.updated_at, s.token, s.term, s.section_crns
+FROM schedules s
+LEFT JOIN schedule_collaborators sc ON s.id = sc.schedule_id
+WHERE (s.token = sqlc.arg(token) OR sc.token = sqlc.arg(token)) AND s.term = sqlc.arg(term)
 LIMIT 1;
 
 -- name: GetScheduleByOwner :one
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
+SELECT id, created_at, updated_at, token, term, section_crns
 FROM schedules
 WHERE token = ? AND term = ?
+LIMIT 1;
+
+-- name: GetScheduleByID :one
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE id = ?
 LIMIT 1;
 
 -- name: UpsertSchedule :exec
@@ -111,24 +124,40 @@ ON CONFLICT(token, term) DO UPDATE SET
     section_crns = excluded.section_crns,
     updated_at = CURRENT_TIMESTAMP;
 
--- name: UpdateScheduleCollaborators :exec
-UPDATE schedules
-SET collaborator_tokens = ?, updated_at = CURRENT_TIMESTAMP
-WHERE token = ? AND term = ?;
-
 -- name: DeleteSchedule :exec
 DELETE FROM schedules
 WHERE token = ? AND term = ?;
 
 -- name: ListSchedulesByToken :many
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
-FROM schedules
-WHERE token = sqlc.arg(token) OR collaborator_tokens LIKE '%' || sqlc.arg(token) || '%'
-ORDER BY term DESC;
+SELECT DISTINCT s.id, s.created_at, s.updated_at, s.token, s.term, s.section_crns
+FROM schedules s
+LEFT JOIN schedule_collaborators sc ON s.id = sc.schedule_id
+WHERE s.token = sqlc.arg(token) OR sc.token = sqlc.arg(token)
+ORDER BY s.term DESC;
 
--- name: GetSectionByCRN :one
+-- Collaborator queries
+
+-- name: AddCollaborator :exec
+INSERT INTO schedule_collaborators (schedule_id, token)
+VALUES (?, ?)
+ON CONFLICT(schedule_id, token) DO NOTHING;
+
+-- name: RemoveCollaborator :exec
+DELETE FROM schedule_collaborators
+WHERE schedule_id = ? AND token = ?;
+
+-- name: IsCollaborator :one
+SELECT COUNT(*) > 0 AS is_collaborator
+FROM schedule_collaborators
+WHERE schedule_id = ? AND token = ?;
+
+-- name: ListCollaborators :many
+SELECT token, joined_at
+FROM schedule_collaborators
+WHERE schedule_id = ?
+ORDER BY joined_at ASC;
+
+-- name: GetSectionsByCRNs :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE term = ? AND crn = ?
-LIMIT 1;
-
+WHERE term = sqlc.arg(term) AND crn IN (sqlc.slice(crns));

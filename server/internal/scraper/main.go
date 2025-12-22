@@ -477,8 +477,10 @@ func htmlToStructuredText(s string) string {
 			if text != "" {
 				// Add space before text if needed (not at start of line)
 				if b.Len() > 0 {
-					last := b.String()[b.Len()-1]
-					if last != '\n' && last != ' ' && last != '•' {
+					str := b.String()
+					last := str[len(str)-1]
+					// Check for newline, space, or bullet point (Unicode, so check string suffix)
+					if last != '\n' && last != ' ' && !strings.HasSuffix(str, "• ") {
 						b.WriteByte(' ')
 					}
 				}

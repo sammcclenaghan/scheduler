@@ -32,6 +32,12 @@ type Schedule struct {
 	CollaboratorTokens string    `json:"collaboratorTokens"`
 }
 
+type ScheduleCollaborator struct {
+	ScheduleID int64     `json:"scheduleId"`
+	Token      string    `json:"token"`
+	JoinedAt   time.Time `json:"joinedAt"`
+}
+
 type Section struct {
 	ID                       int64     `json:"id"`
 	CreatedAt                time.Time `json:"createdAt"`

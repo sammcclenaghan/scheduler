@@ -13,7 +13,8 @@ import (
 type SectionsLister interface {
 	ListSectionsByCourseAndTerm(ctx context.Context, arg db.ListSectionsByCourseAndTermParams) ([]db.Section, error)
 	ListSectionsByCourse(ctx context.Context, coursePid *string) ([]db.Section, error)
-	GetSectionByCRN(ctx context.Context, arg db.GetSectionByCRNParams) (db.Section, error)
+	ListSectionsByCoursePidsAndTerm(ctx context.Context, arg db.ListSectionsByCoursePidsAndTermParams) ([]db.Section, error)
+	GetSectionsByCRNs(ctx context.Context, arg db.GetSectionsByCRNsParams) ([]db.Section, error)
 }
 
 type GroupedSections struct {
@@ -87,23 +88,30 @@ func GetSectionsByCRNs(store SectionsLister) http.HandlerFunc {
 			return
 		}
 
-		crns := strings.Split(crnsParam, ",")
-		sections := make([]db.Section, 0, len(crns))
-
-		for _, crn := range crns {
+		// Parse and clean CRNs
+		rawCrns := strings.Split(crnsParam, ",")
+		crns := make([]string, 0, len(rawCrns))
+		for _, crn := range rawCrns {
 			crn = strings.TrimSpace(crn)
-			if crn == "" {
-				continue
+			if crn != "" {
+				crns = append(crns, crn)
 			}
+		}
 
-			section, err := store.GetSectionByCRN(r.Context(), db.GetSectionByCRNParams{
-				Term: term,
-				Crn:  crn,
-			})
-			if err != nil {
-				continue
-			}
-			sections = append(sections, section)
+		if len(crns) == 0 {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode([]db.Section{})
+			return
+		}
+
+		// Single batch query instead of N queries
+		sections, err := store.GetSectionsByCRNs(r.Context(), db.GetSectionsByCRNsParams{
+			Term: term,
+			Crns: crns,
+		})
+		if err != nil {
+			http.Error(w, "failed to fetch sections", http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -7,7 +7,27 @@ package db
 
 import (
 	"context"
+	"strings"
+	"time"
 )
+
+const addCollaborator = `-- name: AddCollaborator :exec
+
+INSERT INTO schedule_collaborators (schedule_id, token)
+VALUES (?, ?)
+ON CONFLICT(schedule_id, token) DO NOTHING
+`
+
+type AddCollaboratorParams struct {
+	ScheduleID int64  `json:"scheduleId"`
+	Token      string `json:"token"`
+}
+
+// Collaborator queries
+func (q *Queries) AddCollaborator(ctx context.Context, arg AddCollaboratorParams) error {
+	_, err := q.db.ExecContext(ctx, addCollaborator, arg.ScheduleID, arg.Token)
+	return err
+}
 
 const deleteSchedule = `-- name: DeleteSchedule :exec
 DELETE FROM schedules
@@ -109,9 +129,10 @@ func (q *Queries) GetCourseBySubjectCode(ctx context.Context, arg GetCourseBySub
 
 const getSchedule = `-- name: GetSchedule :one
 
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
-FROM schedules
-WHERE (token = ?1 OR collaborator_tokens LIKE '%' || ?1 || '%') AND term = ?2
+SELECT s.id, s.created_at, s.updated_at, s.token, s.term, s.section_crns
+FROM schedules s
+LEFT JOIN schedule_collaborators sc ON s.id = sc.schedule_id
+WHERE (s.token = ?1 OR sc.token = ?1) AND s.term = ?2
 LIMIT 1
 `
 
@@ -120,10 +141,19 @@ type GetScheduleParams struct {
 	Term  string `json:"term"`
 }
 
+type GetScheduleRow struct {
+	ID          int64     `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       string    `json:"token"`
+	Term        string    `json:"term"`
+	SectionCrns string    `json:"sectionCrns"`
+}
+
 // Schedule queries
-func (q *Queries) GetSchedule(ctx context.Context, arg GetScheduleParams) (Schedule, error) {
+func (q *Queries) GetSchedule(ctx context.Context, arg GetScheduleParams) (GetScheduleRow, error) {
 	row := q.db.QueryRowContext(ctx, getSchedule, arg.Token, arg.Term)
-	var i Schedule
+	var i GetScheduleRow
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
@@ -131,13 +161,42 @@ func (q *Queries) GetSchedule(ctx context.Context, arg GetScheduleParams) (Sched
 		&i.Token,
 		&i.Term,
 		&i.SectionCrns,
-		&i.CollaboratorTokens,
+	)
+	return i, err
+}
+
+const getScheduleByID = `-- name: GetScheduleByID :one
+SELECT id, created_at, updated_at, token, term, section_crns
+FROM schedules
+WHERE id = ?
+LIMIT 1
+`
+
+type GetScheduleByIDRow struct {
+	ID          int64     `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       string    `json:"token"`
+	Term        string    `json:"term"`
+	SectionCrns string    `json:"sectionCrns"`
+}
+
+func (q *Queries) GetScheduleByID(ctx context.Context, id int64) (GetScheduleByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getScheduleByID, id)
+	var i GetScheduleByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Token,
+		&i.Term,
+		&i.SectionCrns,
 	)
 	return i, err
 }
 
 const getScheduleByOwner = `-- name: GetScheduleByOwner :one
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
+SELECT id, created_at, updated_at, token, term, section_crns
 FROM schedules
 WHERE token = ? AND term = ?
 LIMIT 1
@@ -148,9 +207,18 @@ type GetScheduleByOwnerParams struct {
 	Term  string `json:"term"`
 }
 
-func (q *Queries) GetScheduleByOwner(ctx context.Context, arg GetScheduleByOwnerParams) (Schedule, error) {
+type GetScheduleByOwnerRow struct {
+	ID          int64     `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       string    `json:"token"`
+	Term        string    `json:"term"`
+	SectionCrns string    `json:"sectionCrns"`
+}
+
+func (q *Queries) GetScheduleByOwner(ctx context.Context, arg GetScheduleByOwnerParams) (GetScheduleByOwnerRow, error) {
 	row := q.db.QueryRowContext(ctx, getScheduleByOwner, arg.Token, arg.Term)
-	var i Schedule
+	var i GetScheduleByOwnerRow
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
@@ -158,55 +226,133 @@ func (q *Queries) GetScheduleByOwner(ctx context.Context, arg GetScheduleByOwner
 		&i.Token,
 		&i.Term,
 		&i.SectionCrns,
-		&i.CollaboratorTokens,
 	)
 	return i, err
 }
 
-const getSectionByCRN = `-- name: GetSectionByCRN :one
+const getSectionsByCRNs = `-- name: GetSectionsByCRNs :many
 SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
 FROM sections
-WHERE term = ? AND crn = ?
-LIMIT 1
+WHERE term = ?1 AND crn IN (/*SLICE:crns*/?)
 `
 
-type GetSectionByCRNParams struct {
-	Term string `json:"term"`
-	Crn  string `json:"crn"`
+type GetSectionsByCRNsParams struct {
+	Term string   `json:"term"`
+	Crns []string `json:"crns"`
 }
 
-func (q *Queries) GetSectionByCRN(ctx context.Context, arg GetSectionByCRNParams) (Section, error) {
-	row := q.db.QueryRowContext(ctx, getSectionByCRN, arg.Term, arg.Crn)
-	var i Section
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Term,
-		&i.Crn,
-		&i.CoursePid,
-		&i.Subject,
-		&i.CourseNumber,
-		&i.CourseName,
-		&i.Section,
-		&i.ScheduleType,
-		&i.InstructionalMethod,
-		&i.Frequency,
-		&i.Time,
-		&i.Days,
-		&i.Location,
-		&i.DateRange,
-		&i.Instructor,
-		&i.Units,
-		&i.AdditionalInformation,
-		&i.EnrollmentActual,
-		&i.EnrollmentMaximum,
-		&i.EnrollmentSeatsAvailable,
-		&i.WaitlistCapacity,
-		&i.WaitlistActual,
-		&i.WaitlistSeatsAvailable,
-	)
-	return i, err
+func (q *Queries) GetSectionsByCRNs(ctx context.Context, arg GetSectionsByCRNsParams) ([]Section, error) {
+	query := getSectionsByCRNs
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Term)
+	if len(arg.Crns) > 0 {
+		for _, v := range arg.Crns {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:crns*/?", strings.Repeat(",?", len(arg.Crns))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:crns*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Section
+	for rows.Next() {
+		var i Section
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Term,
+			&i.Crn,
+			&i.CoursePid,
+			&i.Subject,
+			&i.CourseNumber,
+			&i.CourseName,
+			&i.Section,
+			&i.ScheduleType,
+			&i.InstructionalMethod,
+			&i.Frequency,
+			&i.Time,
+			&i.Days,
+			&i.Location,
+			&i.DateRange,
+			&i.Instructor,
+			&i.Units,
+			&i.AdditionalInformation,
+			&i.EnrollmentActual,
+			&i.EnrollmentMaximum,
+			&i.EnrollmentSeatsAvailable,
+			&i.WaitlistCapacity,
+			&i.WaitlistActual,
+			&i.WaitlistSeatsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const isCollaborator = `-- name: IsCollaborator :one
+SELECT COUNT(*) > 0 AS is_collaborator
+FROM schedule_collaborators
+WHERE schedule_id = ? AND token = ?
+`
+
+type IsCollaboratorParams struct {
+	ScheduleID int64  `json:"scheduleId"`
+	Token      string `json:"token"`
+}
+
+func (q *Queries) IsCollaborator(ctx context.Context, arg IsCollaboratorParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isCollaborator, arg.ScheduleID, arg.Token)
+	var is_collaborator bool
+	err := row.Scan(&is_collaborator)
+	return is_collaborator, err
+}
+
+const listCollaborators = `-- name: ListCollaborators :many
+SELECT token, joined_at
+FROM schedule_collaborators
+WHERE schedule_id = ?
+ORDER BY joined_at ASC
+`
+
+type ListCollaboratorsRow struct {
+	Token    string    `json:"token"`
+	JoinedAt time.Time `json:"joinedAt"`
+}
+
+func (q *Queries) ListCollaborators(ctx context.Context, scheduleID int64) ([]ListCollaboratorsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCollaborators, scheduleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCollaboratorsRow
+	for rows.Next() {
+		var i ListCollaboratorsRow
+		if err := rows.Scan(&i.Token, &i.JoinedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listCourses = `-- name: ListCourses :many
@@ -257,21 +403,31 @@ func (q *Queries) ListCourses(ctx context.Context, arg ListCoursesParams) ([]Cou
 }
 
 const listSchedulesByToken = `-- name: ListSchedulesByToken :many
-SELECT id, created_at, updated_at, token, term, section_crns, collaborator_tokens
-FROM schedules
-WHERE token = ?1 OR collaborator_tokens LIKE '%' || ?1 || '%'
-ORDER BY term DESC
+SELECT DISTINCT s.id, s.created_at, s.updated_at, s.token, s.term, s.section_crns
+FROM schedules s
+LEFT JOIN schedule_collaborators sc ON s.id = sc.schedule_id
+WHERE s.token = ?1 OR sc.token = ?1
+ORDER BY s.term DESC
 `
 
-func (q *Queries) ListSchedulesByToken(ctx context.Context, token string) ([]Schedule, error) {
+type ListSchedulesByTokenRow struct {
+	ID          int64     `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Token       string    `json:"token"`
+	Term        string    `json:"term"`
+	SectionCrns string    `json:"sectionCrns"`
+}
+
+func (q *Queries) ListSchedulesByToken(ctx context.Context, token string) ([]ListSchedulesByTokenRow, error) {
 	rows, err := q.db.QueryContext(ctx, listSchedulesByToken, token)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Schedule
+	var items []ListSchedulesByTokenRow
 	for rows.Next() {
-		var i Schedule
+		var i ListSchedulesByTokenRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,
@@ -279,7 +435,6 @@ func (q *Queries) ListSchedulesByToken(ctx context.Context, token string) ([]Sch
 			&i.Token,
 			&i.Term,
 			&i.SectionCrns,
-			&i.CollaboratorTokens,
 		); err != nil {
 			return nil, err
 		}
@@ -413,6 +568,94 @@ func (q *Queries) ListSectionsByCourseAndTerm(ctx context.Context, arg ListSecti
 	return items, nil
 }
 
+const listSectionsByCoursePidsAndTerm = `-- name: ListSectionsByCoursePidsAndTerm :many
+SELECT id, created_at, updated_at, term, crn, course_pid, subject, course_number, course_name, section, schedule_type, instructional_method, frequency, time, days, location, date_range, instructor, units, additional_information, enrollment_actual, enrollment_maximum, enrollment_seats_available, waitlist_capacity, waitlist_actual, waitlist_seats_available
+FROM sections
+WHERE course_pid IN (/*SLICE:pids*/?) AND term = ?2
+ORDER BY course_pid, schedule_type, crn ASC
+`
+
+type ListSectionsByCoursePidsAndTermParams struct {
+	Pids []*string `json:"pids"`
+	Term string    `json:"term"`
+}
+
+func (q *Queries) ListSectionsByCoursePidsAndTerm(ctx context.Context, arg ListSectionsByCoursePidsAndTermParams) ([]Section, error) {
+	query := listSectionsByCoursePidsAndTerm
+	var queryParams []interface{}
+	if len(arg.Pids) > 0 {
+		for _, v := range arg.Pids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:pids*/?", strings.Repeat(",?", len(arg.Pids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:pids*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.Term)
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Section
+	for rows.Next() {
+		var i Section
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Term,
+			&i.Crn,
+			&i.CoursePid,
+			&i.Subject,
+			&i.CourseNumber,
+			&i.CourseName,
+			&i.Section,
+			&i.ScheduleType,
+			&i.InstructionalMethod,
+			&i.Frequency,
+			&i.Time,
+			&i.Days,
+			&i.Location,
+			&i.DateRange,
+			&i.Instructor,
+			&i.Units,
+			&i.AdditionalInformation,
+			&i.EnrollmentActual,
+			&i.EnrollmentMaximum,
+			&i.EnrollmentSeatsAvailable,
+			&i.WaitlistCapacity,
+			&i.WaitlistActual,
+			&i.WaitlistSeatsAvailable,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeCollaborator = `-- name: RemoveCollaborator :exec
+DELETE FROM schedule_collaborators
+WHERE schedule_id = ? AND token = ?
+`
+
+type RemoveCollaboratorParams struct {
+	ScheduleID int64  `json:"scheduleId"`
+	Token      string `json:"token"`
+}
+
+func (q *Queries) RemoveCollaborator(ctx context.Context, arg RemoveCollaboratorParams) error {
+	_, err := q.db.ExecContext(ctx, removeCollaborator, arg.ScheduleID, arg.Token)
+	return err
+}
+
 const searchCoursesBySubjectCode = `-- name: SearchCoursesBySubjectCode :many
 SELECT id, created_at, updated_at, title, pid, subject_code, description, credits, hours_catalog_text, notes, pre_and_corequisites
 FROM courses
@@ -510,23 +753,6 @@ func (q *Queries) SearchCoursesBySubjectCodeAndTerm(ctx context.Context, arg Sea
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateScheduleCollaborators = `-- name: UpdateScheduleCollaborators :exec
-UPDATE schedules
-SET collaborator_tokens = ?, updated_at = CURRENT_TIMESTAMP
-WHERE token = ? AND term = ?
-`
-
-type UpdateScheduleCollaboratorsParams struct {
-	CollaboratorTokens string `json:"collaboratorTokens"`
-	Token              string `json:"token"`
-	Term               string `json:"term"`
-}
-
-func (q *Queries) UpdateScheduleCollaborators(ctx context.Context, arg UpdateScheduleCollaboratorsParams) error {
-	_, err := q.db.ExecContext(ctx, updateScheduleCollaborators, arg.CollaboratorTokens, arg.Token, arg.Term)
-	return err
 }
 
 const upsertCourse = `-- name: UpsertCourse :exec

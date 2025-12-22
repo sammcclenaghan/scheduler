@@ -100,23 +100,58 @@ func SearchCourses(courseStore CourseSearcher, sectionStore SectionsLister) http
 			return
 		}
 
-		// Enrich courses with default sections
+		if len(courses) == 0 {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode([]CourseWithDefaultSections{})
+			return
+		}
+
+		// Build a map of PID -> course for quick lookup and collect all PIDs
+		pids := make([]*string, 0, len(courses))
+		courseByPid := make(map[string]db.Course, len(courses))
+		for _, course := range courses {
+			pid := course.Pid
+			pids = append(pids, &pid)
+			courseByPid[course.Pid] = course
+		}
+
+		// Fetch all sections for all courses in ONE query (fixes N+1)
+		var allSections []db.Section
+		if term != "" {
+			allSections, err = sectionStore.ListSectionsByCoursePidsAndTerm(r.Context(), db.ListSectionsByCoursePidsAndTermParams{
+				Pids: pids,
+				Term: term,
+			})
+		} else {
+			// For no-term case, we still need individual queries (less common use case)
+			// Could add another batch query if needed
+			allSections = []db.Section{}
+			for _, pid := range pids {
+				sections, err := sectionStore.ListSectionsByCourse(r.Context(), pid)
+				if err != nil {
+					continue
+				}
+				allSections = append(allSections, sections...)
+			}
+		}
+
+		if err != nil {
+			http.Error(w, "failed to fetch sections", http.StatusInternalServerError)
+			return
+		}
+
+		// Group sections by course PID
+		sectionsByPid := make(map[string][]db.Section)
+		for _, sec := range allSections {
+			if sec.CoursePid != nil {
+				sectionsByPid[*sec.CoursePid] = append(sectionsByPid[*sec.CoursePid], sec)
+			}
+		}
+
+		// Build result with default sections for each course
 		coursesWithDefaults := make([]CourseWithDefaultSections, 0, len(courses))
 		for _, course := range courses {
-			var sections []db.Section
-			if term != "" {
-				sections, err = sectionStore.ListSectionsByCourseAndTerm(r.Context(), db.ListSectionsByCourseAndTermParams{
-					CoursePid: &course.Pid,
-					Term:      term,
-				})
-			} else {
-				sections, err = sectionStore.ListSectionsByCourse(r.Context(), &course.Pid)
-			}
-
-			if err != nil {
-				http.Error(w, "failed to fetch sections", http.StatusInternalServerError)
-				return
-			}
+			sections := sectionsByPid[course.Pid]
 
 			// Group sections by type and select defaults
 			grouped := make(map[string][]db.Section)

@@ -13,11 +13,11 @@ import (
 )
 
 type ScheduleStore interface {
-	GetSchedule(ctx context.Context, arg db.GetScheduleParams) (db.Schedule, error)
-	GetScheduleByOwner(ctx context.Context, arg db.GetScheduleByOwnerParams) (db.Schedule, error)
+	GetSchedule(ctx context.Context, arg db.GetScheduleParams) (db.GetScheduleRow, error)
+	GetScheduleByOwner(ctx context.Context, arg db.GetScheduleByOwnerParams) (db.GetScheduleByOwnerRow, error)
 	UpsertSchedule(ctx context.Context, arg db.UpsertScheduleParams) error
-	UpdateScheduleCollaborators(ctx context.Context, arg db.UpdateScheduleCollaboratorsParams) error
 	DeleteSchedule(ctx context.Context, arg db.DeleteScheduleParams) error
+	AddCollaborator(ctx context.Context, arg db.AddCollaboratorParams) error
 }
 
 type ScheduleResponse struct {
@@ -181,7 +181,7 @@ func JoinSchedule(store ScheduleStore) http.HandlerFunc {
 			return
 		}
 
-		// Get the owner's schedule
+		// Get the owner's schedule to get the schedule ID
 		schedule, err := store.GetScheduleByOwner(r.Context(), db.GetScheduleByOwnerParams{
 			Token: req.OwnerToken,
 			Term:  term,
@@ -195,37 +195,13 @@ func JoinSchedule(store ScheduleStore) http.HandlerFunc {
 			return
 		}
 
-		// Parse existing collaborators
-		var collaborators []string
-		if err := json.Unmarshal([]byte(schedule.CollaboratorTokens), &collaborators); err != nil {
-			collaborators = []string{}
-		}
-
-		// Check if already a collaborator
-		for _, c := range collaborators {
-			if c == userToken {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]bool{"joined": true})
-				return
-			}
-		}
-
-		// Add new collaborator
-		collaborators = append(collaborators, userToken)
-		collaboratorsJSON, err := json.Marshal(collaborators)
-		if err != nil {
-			http.Error(w, "failed to encode collaborators", http.StatusInternalServerError)
-			return
-		}
-
-		// Update the schedule
-		err = store.UpdateScheduleCollaborators(r.Context(), db.UpdateScheduleCollaboratorsParams{
-			CollaboratorTokens: string(collaboratorsJSON),
-			Token:              req.OwnerToken,
-			Term:               term,
+		// Add collaborator using the junction table (ON CONFLICT DO NOTHING handles duplicates)
+		err = store.AddCollaborator(r.Context(), db.AddCollaboratorParams{
+			ScheduleID: schedule.ID,
+			Token:      userToken,
 		})
 		if err != nil {
-			http.Error(w, "failed to update collaborators", http.StatusInternalServerError)
+			http.Error(w, "failed to add collaborator", http.StatusInternalServerError)
 			return
 		}
 

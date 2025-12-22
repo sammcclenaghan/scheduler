@@ -16,20 +16,20 @@ import (
 
 // Mock store for schedule tests
 type mockScheduleStore struct {
-	schedule              db.Schedule
-	scheduleByOwner       db.Schedule
-	getErr                error
-	getByOwnerErr         error
-	upsertErr             error
-	updateCollaboratorErr error
-	deleteErr             error
+	schedule        db.GetScheduleRow
+	scheduleByOwner db.GetScheduleByOwnerRow
+	getErr          error
+	getByOwnerErr   error
+	upsertErr       error
+	addCollabErr    error
+	deleteErr       error
 }
 
-func (m *mockScheduleStore) GetSchedule(ctx context.Context, arg db.GetScheduleParams) (db.Schedule, error) {
+func (m *mockScheduleStore) GetSchedule(ctx context.Context, arg db.GetScheduleParams) (db.GetScheduleRow, error) {
 	return m.schedule, m.getErr
 }
 
-func (m *mockScheduleStore) GetScheduleByOwner(ctx context.Context, arg db.GetScheduleByOwnerParams) (db.Schedule, error) {
+func (m *mockScheduleStore) GetScheduleByOwner(ctx context.Context, arg db.GetScheduleByOwnerParams) (db.GetScheduleByOwnerRow, error) {
 	return m.scheduleByOwner, m.getByOwnerErr
 }
 
@@ -37,8 +37,8 @@ func (m *mockScheduleStore) UpsertSchedule(ctx context.Context, arg db.UpsertSch
 	return m.upsertErr
 }
 
-func (m *mockScheduleStore) UpdateScheduleCollaborators(ctx context.Context, arg db.UpdateScheduleCollaboratorsParams) error {
-	return m.updateCollaboratorErr
+func (m *mockScheduleStore) AddCollaborator(ctx context.Context, arg db.AddCollaboratorParams) error {
+	return m.addCollabErr
 }
 
 func (m *mockScheduleStore) DeleteSchedule(ctx context.Context, arg db.DeleteScheduleParams) error {
@@ -59,7 +59,7 @@ func TestGetSchedule(t *testing.T) {
 			term:  "202409",
 			token: "test-token",
 			mock: &mockScheduleStore{
-				schedule: db.Schedule{
+				schedule: db.GetScheduleRow{
 					ID:          1,
 					Token:       "test-token",
 					Term:        "202409",
@@ -100,7 +100,7 @@ func TestGetSchedule(t *testing.T) {
 			term:  "202409",
 			token: "test-token",
 			mock: &mockScheduleStore{
-				schedule: db.Schedule{
+				schedule: db.GetScheduleRow{
 					ID:          1,
 					Token:       "test-token",
 					Term:        "202409",
@@ -337,11 +337,10 @@ func TestJoinSchedule(t *testing.T) {
 			userToken:  "user-token",
 			ownerToken: "owner-token",
 			mock: &mockScheduleStore{
-				scheduleByOwner: db.Schedule{
-					ID:                 1,
-					Token:              "owner-token",
-					Term:               "202409",
-					CollaboratorTokens: `[]`,
+				scheduleByOwner: db.GetScheduleByOwnerRow{
+					ID:    1,
+					Token: "owner-token",
+					Term:  "202409",
 				},
 			},
 			wantStatus: http.StatusOK,
@@ -360,11 +359,10 @@ func TestJoinSchedule(t *testing.T) {
 			userToken:  "user-token",
 			ownerToken: "owner-token",
 			mock: &mockScheduleStore{
-				scheduleByOwner: db.Schedule{
-					ID:                 1,
-					Token:              "owner-token",
-					Term:               "202409",
-					CollaboratorTokens: `["user-token"]`,
+				scheduleByOwner: db.GetScheduleByOwnerRow{
+					ID:    1,
+					Token: "owner-token",
+					Term:  "202409",
 				},
 			},
 			wantStatus: http.StatusOK,
@@ -411,13 +409,12 @@ func TestJoinSchedule(t *testing.T) {
 			userToken:  "user-token",
 			ownerToken: "owner-token",
 			mock: &mockScheduleStore{
-				scheduleByOwner: db.Schedule{
-					ID:                 1,
-					Token:              "owner-token",
-					Term:               "202409",
-					CollaboratorTokens: `[]`,
+				scheduleByOwner: db.GetScheduleByOwnerRow{
+					ID:    1,
+					Token: "owner-token",
+					Term:  "202409",
 				},
-				updateCollaboratorErr: sql.ErrConnDone,
+				addCollabErr: sql.ErrConnDone,
 			},
 			wantStatus: http.StatusInternalServerError,
 		},

@@ -22,6 +22,3 @@ func TestHealthcheck(t *testing.T) {
 		t.Fatalf("unexpected body: got %q, want %q", rr.Body.String(), expectedBody)
 	}
 }
-
-
-

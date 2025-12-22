@@ -279,7 +279,7 @@ function Schedule() {
   };
 
   return (
-    <div className="flex flex-col h-screen md:flex-row">
+    <div className="flex flex-col h-full md:flex-row">
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
         <div className="flex">

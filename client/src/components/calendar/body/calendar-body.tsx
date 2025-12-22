@@ -22,9 +22,9 @@ function WeekView() {
   });
 
   return (
-    <div className="flex-1 overflow-auto min-h-full flex flex-col">
+    <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
       {/* Header with day names */}
-      <div className="border-b sticky top-0 bg-background z-10 flex-shrink-0">
+      <div className="border-b bg-background z-10 flex-shrink-0">
         <div className="flex">
           {/* Empty cell for the time column alignment */}
           <div className="p-3 w-12 flex-shrink-0" aria-hidden="true" />
@@ -44,8 +44,8 @@ function WeekView() {
 
       {/* Time slots */}
       <div
-        className="grid"
-        style={{ gridTemplateRows: "repeat(12, 1fr)", height: "100%" }}
+        className="grid flex-1 overflow-hidden"
+        style={{ gridTemplateRows: "repeat(12, 1fr)" }}
       >
         {timeSlots.map((timeLabel, timeIndex) => {
           const hour = 8 + timeIndex;

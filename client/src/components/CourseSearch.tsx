@@ -176,9 +176,6 @@ function FullSearchContent({
 
         {courses && courses.length > 0 && (
           <div>
-            <p className="text-gray-400 text-xs mb-3">
-              Found {courses.length} courses
-            </p>
             <div className="space-y-2">
               {courses.map((result) => (
                 <div

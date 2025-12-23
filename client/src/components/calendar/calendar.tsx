@@ -11,8 +11,6 @@ export default function Calendar({
   calendarIconIsToday = true,
   selectedTerm,
   onShare,
-  sidebarOpen,
-  onToggleSidebar,
 }: CalendarProps) {
   return (
     <div className="h-full flex flex-col">
@@ -24,8 +22,6 @@ export default function Calendar({
         calendarIconIsToday={calendarIconIsToday}
         selectedTerm={selectedTerm}
         onShare={onShare}
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={onToggleSidebar}
       >
         <CalendarHeader />
         <CalendarBody />

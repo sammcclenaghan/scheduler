@@ -44,7 +44,7 @@ function Schedule() {
   const [selectedCourses, setSelectedCourses] = useState<SelectedCourse[]>([]);
   const [selectedTerm, setSelectedTermState] = useState(() => getTerm());
   const [mobileView, setMobileView] = useState<MobileView>("calendar");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchSidebarOpen, setSearchSidebarOpen] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
 
   // Join shared schedule if opened via shared link
@@ -323,7 +323,8 @@ function Schedule() {
         className={`
           ${mobileView === "search" ? "flex" : "hidden"}
           md:flex
-          w-full md:w-80 bg-gray-900 text-white border-r border-gray-700 shrink-0 overflow-hidden
+          w-full ${searchSidebarOpen ? "md:w-80" : "md:w-12"}
+          bg-gray-900 text-white border-r border-gray-700 shrink-0 overflow-hidden
           flex-col pb-16 md:pb-0
         `}
       >
@@ -331,6 +332,8 @@ function Schedule() {
           selectedTerm={selectedTerm}
           onTermChange={handleTermChange}
           onCourseSelect={handleCourseSelect}
+          isOpen={searchSidebarOpen}
+          onToggle={() => setSearchSidebarOpen(!searchSidebarOpen)}
         />
       </aside>
 
@@ -367,8 +370,6 @@ function Schedule() {
               setDate={setDate}
               selectedTerm={selectedTerm}
               onShare={handleShare}
-              sidebarOpen={sidebarOpen}
-              onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
             />
           </div>
         </div>
@@ -378,7 +379,7 @@ function Schedule() {
       <aside
         className={`
           ${mobileView === "courses" ? "flex" : "hidden"}
-          ${sidebarOpen ? "md:flex" : "md:hidden"}
+          md:flex
           w-full md:w-80 border-l border-gray-700 shrink-0 overflow-y-auto overflow-x-visible z-10
           flex-col pb-16 md:pb-0
         `}

@@ -10,8 +10,6 @@ interface CalendarProviderProps {
   calendarIconIsToday?: boolean
   selectedTerm?: string
   onShare?: () => void
-  sidebarOpen?: boolean
-  onToggleSidebar?: () => void
   children: React.ReactNode
 }
 
@@ -23,8 +21,6 @@ export default function CalendarProvider({
   calendarIconIsToday = true,
   selectedTerm,
   onShare,
-  sidebarOpen,
-  onToggleSidebar,
   children,
 }: CalendarProviderProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
@@ -44,8 +40,6 @@ export default function CalendarProvider({
         calendarIconIsToday,
         selectedTerm,
         onShare,
-        sidebarOpen,
-        onToggleSidebar,
       }}
     >
       {children}

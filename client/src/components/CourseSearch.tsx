@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { Info } from "lucide-react";
+import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { courseQueries } from "../lib/queries";
 import type { CourseSearchResult } from "../lib/types";
@@ -15,12 +15,16 @@ interface CourseSearchProps {
   selectedTerm: string;
   onTermChange: (term: string) => void;
   onCourseSelect?: (result: CourseSearchResult, term: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export function CourseSearch({
   selectedTerm,
   onTermChange,
   onCourseSelect,
+  isOpen,
+  onToggle,
 }: CourseSearchProps) {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,10 +43,96 @@ export function CourseSearch({
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Desktop collapsed state - just show expand button
+  // On mobile, always show the full search panel
+  if (!isOpen) {
+    return (
+      <>
+        {/* Desktop: collapsed bar */}
+        <div className="hidden md:flex flex-col h-full items-center py-4">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="p-2 hover:bg-gray-800 rounded-md transition-colors"
+            title="Expand search"
+          >
+            <PanelLeftOpen className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+        {/* Mobile: still show full search */}
+        <div className="flex md:hidden flex-col h-full w-full">
+          <FullSearchContent
+            selectedTerm={selectedTerm}
+            onTermChange={onTermChange}
+            onCourseSelect={onCourseSelect}
+            onToggle={onToggle}
+            query={query}
+            setQuery={setQuery}
+            courses={courses}
+            isLoading={isLoading}
+            error={error}
+            searchTerm={searchTerm}
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
+      <FullSearchContent
+        selectedTerm={selectedTerm}
+        onTermChange={onTermChange}
+        onCourseSelect={onCourseSelect}
+        onToggle={onToggle}
+        query={query}
+        setQuery={setQuery}
+        courses={courses}
+        isLoading={isLoading}
+        error={error}
+        searchTerm={searchTerm}
+      />
+    </div>
+  );
+}
+
+function FullSearchContent({
+  selectedTerm,
+  onTermChange,
+  onCourseSelect,
+  onToggle,
+  query,
+  setQuery,
+  courses,
+  isLoading,
+  error,
+  searchTerm,
+}: {
+  selectedTerm: string;
+  onTermChange: (term: string) => void;
+  onCourseSelect?: (result: CourseSearchResult, term: string) => void;
+  onToggle: () => void;
+  query: string;
+  setQuery: (q: string) => void;
+  courses: CourseSearchResult[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  searchTerm: string;
+}) {
+  return (
+    <>
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-bold mb-3">Course Search</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold">Course Search</h2>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="p-1.5 hover:bg-gray-800 rounded-md transition-colors hidden md:block"
+            title="Collapse search"
+          >
+            <PanelLeftClose className="h-4 w-4 text-gray-400" />
+          </button>
+        </div>
 
         <div className="flex gap-2 mb-3">
           {TERMS.map((term) => (
@@ -64,7 +154,7 @@ export function CourseSearch({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by subject code (e.g., CSC, CSC 230)..."
+          placeholder="Search for courses..."
           className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
         />
       </div>
@@ -86,9 +176,6 @@ export function CourseSearch({
 
         {courses && courses.length > 0 && (
           <div>
-            <p className="text-gray-400 text-xs mb-3">
-              Found {courses.length} courses
-            </p>
             <div className="space-y-2">
               {courses.map((result) => (
                 <div
@@ -121,12 +208,7 @@ export function CourseSearch({
           </div>
         )}
 
-        {!searchTerm && (
-          <p className="text-gray-500 text-sm">
-            Enter a subject code to search (e.g., CSC, MATH, PHYS)
-          </p>
-        )}
       </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { X, ChevronRight, Calendar, Clock, User } from "lucide-react";
@@ -26,6 +26,18 @@ export function SelectedCoursesSidebar({
   onClearAll,
 }: SelectedCoursesSidebarProps) {
   const [expandedCourseKey, setExpandedCourseKey] = useState<string | null>(null);
+  const prevCoursesLengthRef = useRef(selectedCourses.length);
+
+  // Auto-expand newly added courses
+  useEffect(() => {
+    if (selectedCourses.length > prevCoursesLengthRef.current) {
+      // A new course was added - find the newly added one and expand it
+      const newCourse = selectedCourses[selectedCourses.length - 1];
+      const courseKey = `${newCourse.course.pid}-${newCourse.term}`;
+      setExpandedCourseKey(courseKey);
+    }
+    prevCoursesLengthRef.current = selectedCourses.length;
+  }, [selectedCourses]);
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white overflow-x-visible">
@@ -48,11 +60,7 @@ export function SelectedCoursesSidebar({
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="text-gray-400 text-xs mb-3">
-              {selectedCourses.length} course
-              {selectedCourses.length !== 1 && "s"} selected
-            </p>
-            {selectedCourses.map((selected) => {
+              {selectedCourses.map((selected) => {
               const courseKey = `${selected.course.pid}-${selected.term}`;
               return (
                 <CourseCard

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Search, Calendar as CalendarIcon, List } from "lucide-react";
 import Calendar from "../components/calendar/calendar";
 import AgendaView from "../components/calendar/agenda-view";
@@ -12,7 +12,6 @@ import {
 } from "../components/SelectedCoursesSidebar";
 import { sectionsToEvents } from "../lib/section-to-events";
 import type { CourseSearchResult, Course, Section } from "../lib/types";
-import { scheduleQueries } from "../lib/queries";
 import { schedulesApi } from "../lib/api";
 import {
   getSharedToken,
@@ -38,14 +37,13 @@ export const Route = createFileRoute("/schedule")({
 type MobileView = "search" | "calendar" | "courses";
 
 function Schedule() {
-  const queryClient = useQueryClient();
   const [date, setDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<SelectedCourse[]>([]);
   const [selectedTerm, setSelectedTermState] = useState(() => getTerm());
   const [mobileView, setMobileView] = useState<MobileView>("calendar");
   const [searchSidebarOpen, setSearchSidebarOpen] = useState(true);
-  const [hasJoined, setHasJoined] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   // Join shared schedule if opened via shared link
   // Read directly from window.location on mount to capture params before any routing
@@ -61,14 +59,14 @@ function Schedule() {
       setTerm(urlTermParam);
     }
 
-    const termToUse = urlTermParam || selectedTerm;
+    const termToUse = urlTermParam || getTerm();
 
-    if (sharedToken && sharedToken !== ownToken && !hasJoined) {
+    if (sharedToken && sharedToken !== ownToken) {
       schedulesApi
         .join(termToUse, sharedToken)
         .then(() => {
-          setHasJoined(true);
-          queryClient.invalidateQueries({ queryKey: ["schedules"] });
+          // Trigger reload to fetch the joined schedule
+          setReloadTrigger((n) => n + 1);
         })
         .catch(console.error);
     }
@@ -79,15 +77,8 @@ function Schedule() {
     setSelectedTermState(term);
   };
 
-  const { data: savedSchedule, isLoading: isLoadingSchedule } = useQuery({
-    ...scheduleQueries.byTerm(selectedTerm),
-  });
-
   const saveMutation = useMutation({
     mutationFn: (crns: string[]) => schedulesApi.save(selectedTerm, crns),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedules", selectedTerm] });
-    },
   });
 
   const saveSchedule = useCallback(
@@ -98,84 +89,85 @@ function Schedule() {
     [saveMutation],
   );
 
+  // Load schedule on mount and term change only
   useEffect(() => {
-    if (!savedSchedule || isLoadingSchedule) return;
-    if (savedSchedule.sectionCrns.length === 0) {
-      setSelectedCourses([]);
-      setEvents([]);
-      return;
-    }
-
-    const loadSectionsFromCrns = async () => {
-      const crns = savedSchedule.sectionCrns;
-      const sectionsResponse = await fetch(
-        `/api/sections/by-crns/${selectedTerm}?crns=${crns.join(",")}`,
-      );
-
-      if (!sectionsResponse.ok) {
-        console.error("Failed to load sections from CRNs");
-        return;
-      }
-
-      const sections: Section[] = await sectionsResponse.json();
-
-      const courseMap = new Map<
-        string,
-        { course: Course | null; sections: Section[] }
-      >();
-      for (const section of sections) {
-        const key =
-          section.coursePid || `${section.subject}${section.courseNumber}`;
-        if (!courseMap.has(key)) {
-          courseMap.set(key, { course: null, sections: [] });
+    const loadSchedule = async () => {
+      try {
+        const scheduleResponse = await schedulesApi.get(selectedTerm);
+        if (scheduleResponse.sectionCrns.length === 0) {
+          setSelectedCourses([]);
+          setEvents([]);
+          return;
         }
-        courseMap.get(key)!.sections.push(section);
-      }
 
-      const newSelectedCourses: SelectedCourse[] = [];
-      for (const [key, { sections }] of courseMap) {
-        if (sections.length === 0) continue;
-        const firstSection = sections[0];
-        const pseudoCourse: Course = {
-          id: 0,
-          createdAt: "",
-          updatedAt: "",
-          title: firstSection.courseName,
-          pid: firstSection.coursePid || key,
-          subjectCode: `${firstSection.subject} ${firstSection.courseNumber}`,
-          description: "",
-          credits: firstSection.units,
-          hoursCatalogText: "",
-          notes: "",
-          preAndCorequisites: "",
-        };
-        newSelectedCourses.push({
-          course: pseudoCourse,
-          sections,
-          term: selectedTerm,
+        const sectionsResponse = await fetch(
+          `/api/sections/by-crns/${selectedTerm}?crns=${scheduleResponse.sectionCrns.join(",")}`,
+        );
+
+        if (!sectionsResponse.ok) {
+          console.error("Failed to load sections from CRNs");
+          return;
+        }
+
+        const sections: Section[] = await sectionsResponse.json();
+
+        const courseMap = new Map<
+          string,
+          { course: Course | null; sections: Section[] }
+        >();
+        for (const section of sections) {
+          const key =
+            section.coursePid || `${section.subject}${section.courseNumber}`;
+          if (!courseMap.has(key)) {
+            courseMap.set(key, { course: null, sections: [] });
+          }
+          courseMap.get(key)!.sections.push(section);
+        }
+
+        const newSelectedCourses: SelectedCourse[] = [];
+        for (const [key, { sections }] of courseMap) {
+          if (sections.length === 0) continue;
+          const firstSection = sections[0];
+          const pseudoCourse: Course = {
+            id: 0,
+            createdAt: "",
+            updatedAt: "",
+            title: firstSection.courseName,
+            pid: firstSection.coursePid || key,
+            subjectCode: `${firstSection.subject} ${firstSection.courseNumber}`,
+            description: "",
+            credits: firstSection.units,
+            hoursCatalogText: "",
+            notes: "",
+            preAndCorequisites: "",
+          };
+          newSelectedCourses.push({
+            course: pseudoCourse,
+            sections,
+            term: selectedTerm,
+          });
+        }
+
+        setSelectedCourses(newSelectedCourses);
+        
+        // Rebuild events inline to avoid stale closure
+        const allEvents: CalendarEvent[] = [];
+        newSelectedCourses.forEach((sc, colorIndex) => {
+          const newEvents = sectionsToEvents(sc.sections, new Date(), colorIndex);
+          allEvents.push(...newEvents);
         });
+        setEvents(allEvents);
+      } finally {
+        // Loading complete
       }
-
-      setSelectedCourses(newSelectedCourses);
-      rebuildEvents(newSelectedCourses);
     };
 
-    loadSectionsFromCrns();
-  }, [savedSchedule, isLoadingSchedule, selectedTerm]);
-
-  const rebuildEvents = (courses: SelectedCourse[]) => {
-    const allEvents: CalendarEvent[] = [];
-    courses.forEach((sc, colorIndex) => {
-      const newEvents = sectionsToEvents(sc.sections, date, colorIndex);
-      allEvents.push(...newEvents);
-    });
-    setEvents(allEvents);
-  };
+    loadSchedule();
+  }, [selectedTerm, reloadTrigger]);
 
   const handleTermChange = (term: string) => {
     setSelectedTerm(term);
-    setSelectedCourses([]);
-    setEvents([]);
+    // The useEffect will reload for the new term automatically
   };
 
   const handleCourseSelect = (result: CourseSearchResult, term: string) => {

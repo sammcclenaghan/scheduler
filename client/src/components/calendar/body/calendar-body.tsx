@@ -43,54 +43,56 @@ function WeekView() {
       </div>
 
       {/* Time slots */}
-      <div
-        className="grid flex-1 overflow-hidden"
-        style={{ gridTemplateRows: "repeat(12, 1fr)" }}
-      >
-        {timeSlots.map((timeLabel, timeIndex) => {
-          const hour = 8 + timeIndex;
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className="grid"
+          style={{ gridTemplateRows: "repeat(12, minmax(80px, 1fr))" }}
+        >
+          {timeSlots.map((timeLabel, timeIndex) => {
+            const hour = 8 + timeIndex;
 
-          return (
-            <div
-              key={timeLabel}
-              className="grid border-b"
-              style={{ gridTemplateColumns: "48px repeat(5, 1fr)" }}
-            >
-              {/* Time column */}
-              <div className="p-1 text-xs text-muted-foreground text-center border-r w-12 flex-shrink-0 bg-muted/20 flex items-start justify-center pt-2">
-                {timeLabel}
-              </div>
+            return (
+              <div
+                key={timeLabel}
+                className="grid border-b"
+                style={{ gridTemplateColumns: "48px repeat(5, 1fr)" }}
+              >
+                {/* Time column */}
+                <div className="p-1 text-xs text-muted-foreground text-center border-r w-12 flex-shrink-0 bg-muted/20 flex items-start justify-center pt-2">
+                  {timeLabel}
+                </div>
 
-              {/* Day columns */}
-              {weekDays.map((day, dayIndex) => {
-                const dayEvents = events.filter((event) => {
-                  const eventDate = startOfDay(event.start);
-                  const currentDate = startOfDay(day);
+                {/* Day columns */}
+                {weekDays.map((day, dayIndex) => {
+                  const dayEvents = events.filter((event) => {
+                    const eventDate = startOfDay(event.start);
+                    const currentDate = startOfDay(day);
+                    return (
+                      eventDate.getTime() === currentDate.getTime() &&
+                      Math.floor(event.start.getHours()) === hour
+                    );
+                  });
+
                   return (
-                    eventDate.getTime() === currentDate.getTime() &&
-                    Math.floor(event.start.getHours()) === hour
-                  );
-                });
-
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={cn(
-                      "relative",
-                      dayIndex > 0 && "border-l", // Only add left border for columns after Monday
-                    )}
-                  >
-                    <div className="relative h-full">
-                      {dayEvents.map((event) => (
-                        <CalendarEvent key={event.id} event={event} />
-                      ))}
+                    <div
+                      key={day.toISOString()}
+                      className={cn(
+                        "relative",
+                        dayIndex > 0 && "border-l", // Only add left border for columns after Monday
+                      )}
+                    >
+                      <div className="relative h-full">
+                        {dayEvents.map((event) => (
+                          <CalendarEvent key={event.id} event={event} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

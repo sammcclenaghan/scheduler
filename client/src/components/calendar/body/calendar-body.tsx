@@ -1,99 +1,98 @@
+import { addDays, format, startOfDay, startOfWeek } from "date-fns";
+import { cn } from "@/lib/utils";
 import { useCalendarContext } from "../calendar-context";
 import CalendarEvent from "../calendar-event";
-import { format, startOfWeek, addDays, startOfDay } from "date-fns";
-import { cn } from "@/lib/utils";
 
 export default function CalendarBody() {
-  return <WeekView />;
+	return <WeekView />;
 }
 
 function WeekView() {
-  const { events, date } = useCalendarContext();
+	const { events, date } = useCalendarContext();
 
-  // Get Monday of the current week
-  const weekStart = startOfWeek(date);
-  const monday = addDays(weekStart, 1); // Add 1 to get Monday (startOfWeek returns Sunday)
-  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(monday, i)); // Monday to Friday
+	const weekStart = startOfWeek(date);
+	const monday = addDays(weekStart, 1);
+	const weekDays = Array.from({ length: 5 }, (_, i) => addDays(monday, i));
 
-  const timeSlots = Array.from({ length: 12 }, (_, i) => {
-    const hour = 8 + i; // Start from 8 AM to 7 PM (12 slots)
-    // Correctly format noon as PM and use AM/PM for other hours
-    return hour === 12 ? "12 PM" : hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
-  });
+	const timeSlots = Array.from({ length: 12 }, (_, i) => {
+		const hour = 8 + i;
+		if (hour === 12) return "12 PM";
+		return hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
+	});
 
-  return (
-    <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
-      {/* Header with day names */}
-      <div className="border-b bg-background z-10 flex-shrink-0">
-        <div className="flex">
-          {/* Empty cell for the time column alignment */}
-          <div className="p-3 w-12 flex-shrink-0" aria-hidden="true" />
-          {weekDays.map((day, dayIndex) => (
-            <div
-              key={day.toISOString()}
-              className={cn(
-                "p-3 text-center text-sm font-medium text-muted-foreground flex-1",
-                dayIndex > 0 && "border-l", // Only add left border for columns after Monday
-              )}
-            >
-              <div className="font-medium">{format(day, "EEE")}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+	return (
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+			<div className="z-10 flex-shrink-0 border-b border-border bg-surface">
+				<div className="flex">
+					<div className="w-16 flex-shrink-0 p-4" aria-hidden="true" />
+					{weekDays.map((day, dayIndex) => (
+						<div
+							key={day.toISOString()}
+							className={cn(
+								"flex-1 px-3 py-4 text-center text-sm",
+								dayIndex > 0 && "border-l border-border",
+							)}
+						>
+							<p className="font-semibold tracking-tight text-foreground">
+								{format(day, "EEE")}
+							</p>
+							<p className="mt-0.5 text-xs text-muted-foreground">
+								{format(day, "MMM d")}
+							</p>
+						</div>
+					))}
+				</div>
+			</div>
 
-      {/* Time slots */}
-      <div className="flex-1 overflow-y-auto">
-        <div
-          className="grid"
-          style={{ gridTemplateRows: "repeat(12, minmax(80px, 1fr))" }}
-        >
-          {timeSlots.map((timeLabel, timeIndex) => {
-            const hour = 8 + timeIndex;
+			<div className="flex-1 overflow-y-auto">
+				<div
+					className="grid"
+					style={{ gridTemplateRows: "repeat(12, minmax(96px, 1fr))" }}
+				>
+					{timeSlots.map((timeLabel, timeIndex) => {
+						const hour = 8 + timeIndex;
 
-            return (
-              <div
-                key={timeLabel}
-                className="grid border-b"
-                style={{ gridTemplateColumns: "48px repeat(5, 1fr)" }}
-              >
-                {/* Time column */}
-                <div className="p-1 text-xs text-muted-foreground text-center border-r w-12 flex-shrink-0 bg-muted/20 flex items-start justify-center pt-2">
-                  {timeLabel}
-                </div>
+						return (
+							<div
+								key={timeLabel}
+								className="grid border-b border-border"
+								style={{ gridTemplateColumns: "64px repeat(5, 1fr)" }}
+							>
+								<div className="flex w-16 items-start justify-center border-r border-border bg-surface p-3 text-[11px] font-medium text-muted-foreground">
+									{timeLabel}
+								</div>
 
-                {/* Day columns */}
-                {weekDays.map((day, dayIndex) => {
-                  const dayEvents = events.filter((event) => {
-                    const eventDate = startOfDay(event.start);
-                    const currentDate = startOfDay(day);
-                    return (
-                      eventDate.getTime() === currentDate.getTime() &&
-                      Math.floor(event.start.getHours()) === hour
-                    );
-                  });
+								{weekDays.map((day, dayIndex) => {
+									const dayEvents = events.filter((event) => {
+										const eventDate = startOfDay(event.start);
+										const currentDate = startOfDay(day);
+										return (
+											eventDate.getTime() === currentDate.getTime() &&
+											Math.floor(event.start.getHours()) === hour
+										);
+									});
 
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      className={cn(
-                        "relative",
-                        dayIndex > 0 && "border-l", // Only add left border for columns after Monday
-                      )}
-                    >
-                      <div className="relative h-full">
-                        {dayEvents.map((event) => (
-                          <CalendarEvent key={event.id} event={event} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
+									return (
+										<div
+											key={day.toISOString()}
+											className={cn(
+												"relative",
+												dayIndex > 0 && "border-l border-border",
+											)}
+										>
+											<div className="relative h-full">
+												{dayEvents.map((event) => (
+													<CalendarEvent key={event.id} event={event} />
+												))}
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		</div>
+	);
 }
